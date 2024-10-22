@@ -1,0 +1,23 @@
+[theme]
+primaryColor = "#4CAF50"
+backgroundColor = "#FFFFFF"
+secondaryBackgroundColor = "#F0F2F6"
+textColor = "#262730"
+
+[server]
+maxUploadSize = 200
+enableXsrfProtection = true
+
+[browser]
+gatherUsageStats = false
+
+[runner]
+magicEnabled = true
+fastRerenderEnabled = true
+
+[client]
+showErrorDetails = false
+
+[logger]
+level = "INFO"
+messageFormat = "%(asctime)s %(levelname)s %(message)s"
