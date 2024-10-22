@@ -1,2 +1,10 @@
 streamlit
-openai
+openai==0.28
+pandas
+numpy
+sqlalchemy
+folium
+streamlit-folium
+searoute
+fuzzywuzzy
+python-Levenshtein
