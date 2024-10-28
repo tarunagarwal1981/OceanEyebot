@@ -193,7 +193,7 @@ def show_vessel_synopsis(vessel_name: str):
           "CII ratings" cr
           join "vessel_particulars" vp on cr."vessel_imo" = vp."vessel_imo"::bigint
         where
-          vp."vessel_name" = '{vessel_name}';
+          vp."vessel_name" = '{vessel_name.upper()}';
         """
         cii_data = fetch_data_from_db(cii_query)
         cii_rating = cii_data.iloc[0]['cii_rating'] if not cii_data.empty else "N/A"
