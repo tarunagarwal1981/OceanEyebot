@@ -87,7 +87,7 @@ def analyze_hull_performance(vessel_name: str):
     
     # Compute power loss statistics
     avg_power_loss = data['hull_roughness_power_loss'].mean()
-    hull_condition = "Good" if avg_power_loss < 15 else ("Average" if avg_power_loss < 25 else "Poor")
+    hull_condition = "Good" if avg_power_loss < 15 else ("Average" if 15 <= avg_power_loss <= 25 else "Poor")
     
     # Return analysis summary, average power loss, hull condition, and the figure
     return f"Hull performance for {vessel_name}: Average power loss is {avg_power_loss:.2f}%. Hull condition is {hull_condition}.", avg_power_loss, hull_condition, fig
