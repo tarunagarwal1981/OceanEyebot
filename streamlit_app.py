@@ -729,81 +729,106 @@ def main():
     st.markdown(
         """
         <style>
-            /* Set container width to 70% */
+            /* Set main container width and center it */
             .block-container {
-                padding-top: 1rem;
-                padding-bottom: 0rem;
-                max-width: 70%;
+                padding: 2rem 1rem;
+                max-width: 60% !important;
+                margin-left: auto !important;
+                margin-right: auto !important;
             }
             
-            /* Remove extra spacing between elements */
-            .element-container {
-                margin-bottom: 1rem;
+            /* Title and header alignment */
+            .stTitle {
+                width: 100%;
+                margin-left: 0 !important;
+                padding-left: 0 !important;
             }
             
-            /* Adjust markdown spacing */
-            .stMarkdown {
-                margin-bottom: 0rem;
+            /* Center the subtitle/description text */
+            .stMarkdown p {
+                width: 100%;
+                margin-left: 0 !important;
+                padding-left: 0 !important;
             }
             
-            /* Adjust metric widget spacing */
-            .stMetric {
-                margin-bottom: 0.5rem;
+            /* Chat container alignment */
+            .stChatFloatingInputContainer {
+                max-width: 60% !important;
+                margin-left: auto !important;
+                margin-right: auto !important;
+                left: 0 !important;
+                right: 0 !important;
             }
             
-            /* Style the chat input container to match 70% width */
+            /* Chat input styling */
             .stChatInputContainer {
-                max-width: 70%;
-                margin-left: auto;
-                margin-right: auto;
+                max-width: 100% !important;
+                padding: 0 !important;
             }
             
-            /* Style the chat input container background */
-            .stChatInputContainer > div {
-                background-color: #f0f2f6;
+            /* Chat messages alignment */
+            .stChatMessage {
+                max-width: 100% !important;
+                margin-left: 0 !important;
+                margin-right: 0 !important;
+                padding-left: 0 !important;
+                padding-right: 0 !important;
             }
             
-            /* Style the chat input */
-            .stChatInput {
-                max-width: 60%;
-                margin-left: auto;
-                margin-right: auto;
+            /* Message container alignment */
+            .stChatMessageContainer {
+                max-width: 100% !important;
+                margin-left: 0 !important;
+                margin-right: 0 !important;
+                padding-left: 0 !important;
+                padding-right: 0 !important;
             }
             
-            /* Add custom scrollbar */
+            /* General element container spacing */
+            .element-container {
+                margin-bottom: 1rem !important;
+            }
+            
+            /* Remove default streamlit padding */
+            .css-1544g2n {
+                padding: 0 !important;
+            }
+            
+            /* Ensure all content aligns properly */
+            .main > .block-container {
+                padding-top: 2rem !important;
+                padding-bottom: 2rem !important;
+            }
+            
+            /* Custom scrollbar */
             ::-webkit-scrollbar {
-                width: 10px;
-                height: 10px;
+                width: 8px;
+                height: 8px;
             }
             ::-webkit-scrollbar-track {
                 background: #f1f1f1;
-                border-radius: 5px;
+                border-radius: 4px;
             }
             ::-webkit-scrollbar-thumb {
                 background: #888;
-                border-radius: 5px;
+                border-radius: 4px;
             }
             ::-webkit-scrollbar-thumb:hover {
                 background: #555;
             }
             
-            /* Ensure chat messages align with 70% width */
-            .stChatMessage {
-                max-width: 60%;
-                margin-left: auto;
-                margin-right: auto;
+            /* Ensure expandable sections align properly */
+            .stExpander {
+                width: 100% !important;
+                margin-left: 0 !important;
+                margin-right: 0 !important;
             }
             
-            /* Style the bottom spacing of the chat container */
-            .stChatMessageContainer {
-                padding-bottom: 5rem;
-            }
-            
-            /* Adjust footer position */
-            .reportview-container .main footer {
-                max-width: 60%;
-                margin-left: auto;
-                margin-right: auto;
+            /* Ensure metric widgets align properly */
+            .stMetric {
+                width: 100% !important;
+                margin-left: 0 !important;
+                margin-right: 0 !important;
             }
         </style>
         """, 
@@ -826,6 +851,7 @@ def main():
     st.title("VesselIQ - Smart Vessel Insights")
     st.markdown("Ask me about vessel performance, speed consumption, or request a complete vessel synopsis!")
     
+    # Rest of the main function remains the same...
     # Initialize session state variables
     if 'messages' not in st.session_state:
         st.session_state.messages = []
