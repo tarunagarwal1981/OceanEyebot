@@ -733,7 +733,7 @@ def main():
             .block-container {
                 padding-top: 1rem;
                 padding-bottom: 0rem;
-                max-width: 60%;
+                max-width: 70%;
             }
             
             /* Remove extra spacing between elements */
@@ -751,6 +751,25 @@ def main():
                 margin-bottom: 0.5rem;
             }
             
+            /* Style the chat input container to match 70% width */
+            .stChatInputContainer {
+                max-width: 70%;
+                margin-left: auto;
+                margin-right: auto;
+            }
+            
+            /* Style the chat input container background */
+            .stChatInputContainer > div {
+                background-color: #f0f2f6;
+            }
+            
+            /* Style the chat input */
+            .stChatInput {
+                max-width: 60%;
+                margin-left: auto;
+                margin-right: auto;
+            }
+            
             /* Add custom scrollbar */
             ::-webkit-scrollbar {
                 width: 10px;
@@ -766,6 +785,25 @@ def main():
             }
             ::-webkit-scrollbar-thumb:hover {
                 background: #555;
+            }
+            
+            /* Ensure chat messages align with 70% width */
+            .stChatMessage {
+                max-width: 60%;
+                margin-left: auto;
+                margin-right: auto;
+            }
+            
+            /* Style the bottom spacing of the chat container */
+            .stChatMessageContainer {
+                padding-bottom: 5rem;
+            }
+            
+            /* Adjust footer position */
+            .reportview-container .main footer {
+                max-width: 60%;
+                margin-left: auto;
+                margin-right: auto;
             }
         </style>
         """, 
