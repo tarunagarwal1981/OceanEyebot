@@ -403,11 +403,11 @@ def show_vessel_synopsis(vessel_name: str):
             )
         
         # Display vessel position
-        with st.expander("Last Reported Position", expanded=True):
+        with st.expander("Last Reported Position", expanded=False):
             show_vessel_position(vessel_name)
         
         # Display hull performance
-        with st.expander("Hull Performance", expanded=True):
+        with st.expander("Hull Performance", expanded=False):
             if hull_chart:
                 st.pyplot(hull_chart)
                 st.markdown(hull_analysis)
@@ -415,7 +415,7 @@ def show_vessel_synopsis(vessel_name: str):
                 st.warning("No hull performance data available")
         
         # Display speed consumption
-        with st.expander("Speed Consumption Profile", expanded=True):
+        with st.expander("Speed Consumption Profile", expanded=False):
             if speed_charts:
                 st.pyplot(speed_charts)
                 st.markdown(speed_analysis)
@@ -423,7 +423,7 @@ def show_vessel_synopsis(vessel_name: str):
                 st.warning("No speed consumption data available")
         
         # Display vessel score details
-        with st.expander("Vessel Score Details", expanded=True):
+        with st.expander("Vessel Score Details", expanded=False):
             if vessel_score > 0:
                 col1, col2 = st.columns([1, 2])
                 with col1:
@@ -465,7 +465,7 @@ def show_vessel_synopsis(vessel_name: str):
                 st.warning("No vessel score data available")
         
         # Display crew score details
-        with st.expander("Crew Score Details", expanded=True):
+        with st.expander("Crew Score Details", expanded=False):
             if crew_skill_index > 0:
                 col1, col2 = st.columns([1, 2])
                 with col1:
