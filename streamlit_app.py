@@ -551,7 +551,7 @@ def main():
         unsafe_allow_html=True
     )
     
-    st.title("Advanced Vessel Performance Chatbot")
+    st.title("VesselIQ - Smart Vessel Insights")
     st.markdown("Ask me about vessel performance, speed consumption, or request a complete vessel synopsis!")
     
     # Initialize session state variables if they don't exist
