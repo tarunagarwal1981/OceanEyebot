@@ -311,7 +311,7 @@ def show_vessel_synopsis(vessel_name: str):
             crew_skill_index = capability_index = competency_index = collaboration_index = character_index = 0.0
         
         # Create header with vessel name
-        st.header(f"Vessel Synopsis - {vessel_name}")
+        st.header(f"Vessel Synopsis - {vessel_name.upper()}")
         
         # Add CSS for status colors and summary styling
         st.markdown("""
