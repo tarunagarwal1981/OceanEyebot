@@ -323,6 +323,81 @@ def show_vessel_synopsis(vessel_name: str):
     with crew_col2:
         st.metric(label="Response Time", value="88%")
     
+    # New Crew Skill Index Section
+    st.markdown("#### Crew Skill Index")
+    
+    # Query to get crew skill indices
+    crew_query = """
+    select 
+        "Crew Skill Index",
+        "Capability Index",
+        "Competency Index",
+        "Collaboration Index",
+        "Character Index"
+    from
+        "crew scorecard"
+    order by
+        random()
+    limit
+        1;
+    """
+    
+    try:
+        crew_data = fetch_data_from_db(crew_query)
+        if not crew_data.empty:
+            # Create a table with the crew indices
+            st.markdown(
+                f"""
+                <style>
+                .crew-index-table {{
+                    width: 100%;
+                    border-collapse: collapse;
+                    margin-top: 0.5rem;
+                    margin-bottom: 1rem;
+                }}
+                .crew-index-table th, .crew-index-table td {{
+                    border: 1px solid #F4F4F4;
+                    padding: 8px;
+                    text-align: left;
+                }}
+                .crew-index-table th {{
+                    background-color: #f8f9fa;
+                }}
+                </style>
+                <table class="crew-index-table">
+                    <tr>
+                        <th>Index Type</th>
+                        <th>Score</th>
+                    </tr>
+                    <tr>
+                        <td>Crew Skill Index</td>
+                        <td>{crew_data.iloc[0]['Crew Skill Index']}%</td>
+                    </tr>
+                    <tr>
+                        <td>Capability Index</td>
+                        <td>{crew_data.iloc[0]['Capability Index']}%</td>
+                    </tr>
+                    <tr>
+                        <td>Competency Index</td>
+                        <td>{crew_data.iloc[0]['Competency Index']}%</td>
+                    </tr>
+                    <tr>
+                        <td>Collaboration Index</td>
+                        <td>{crew_data.iloc[0]['Collaboration Index']}%</td>
+                    </tr>
+                    <tr>
+                        <td>Character Index</td>
+                        <td>{crew_data.iloc[0]['Character Index']}%</td>
+                    </tr>
+                </table>
+                """,
+                unsafe_allow_html=True
+            )
+        else:
+            st.warning("No crew skill index data available for this vessel")
+    except Exception as e:
+        st.error(f"Error fetching crew skill index data: {str(e)}")
+    
     # Commercial Performance (Placeholder)
     st.subheader("Commercial Performance")
     st.info("Commercial performance metrics will be integrated in future updates")
