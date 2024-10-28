@@ -75,12 +75,19 @@ def get_last_position(vessel_name: str) -> Tuple[Optional[float], Optional[float
         Tuple[Optional[float], Optional[float]]: (latitude, longitude) or (None, None) if no data
     """
     query = f"""
-    SELECT TOP 1 LATITUDE, LONGITUDE
-    FROM sf_consumption_logs
-    WHERE UPPER(vessel_name) = '{vessel_name.upper()}'
-    AND LATITUDE IS NOT NULL 
-    AND LONGITUDE IS NOT NULL
-    ORDER BY reportdate DESC
+    select
+      "LATITUDE",
+      "LONGITUDE"
+    from
+      sf_consumption_logs
+    where
+      UPPER("VESSEL_NAME") = '{vessel_name.upper()}'
+      and "LATITUDE" is not null
+      and "LONGITUDE" is not null
+    order by
+      "REPORT_DATE" desc
+    limit
+      1;
     """
     
     try:
