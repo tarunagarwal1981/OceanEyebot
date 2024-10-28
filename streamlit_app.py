@@ -212,7 +212,26 @@ def show_vessel_synopsis(vessel_name: str):
             </tr>
             <tr>
                 <td>CII Rating</td>
-                <td>N/A</td>
+                <td>
+    """
+    try:
+        # Fetch CII Rating from the database
+        cii_query = f"""
+        select
+          cr."cii_rating"
+        from
+          "CII ratings" cr
+          join "vessel_particulars" vp on cr."vessel_imo" = vp."vessel_imo"::bigint
+        where
+          vp."vessel_name" = '{vessel_name}';
+        """
+        cii_data = fetch_data_from_db(cii_query)
+        cii_rating = cii_data.iloc[0]['cii_rating'] if not cii_data.empty else "N/A"
+    except Exception as e:
+        st.error(f"Error fetching CII rating: {str(e)}")
+        cii_rating = "N/A"
+    """</td>
+                <td>{cii_rating}</td>
             </tr>
         </table>
         """,
