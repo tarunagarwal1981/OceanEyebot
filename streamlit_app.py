@@ -8,6 +8,8 @@ from typing import Dict, Tuple, Optional
 from agents.hull_performance_agent import analyze_hull_performance
 from agents.speed_consumption_agent import analyze_speed_consumption
 from utils.nlp_utils import clean_vessel_name
+import folium
+from streamlit_folium import st_folium
 
 # LLM Prompts
 DECISION_PROMPT = """
@@ -64,7 +66,77 @@ def get_api_key():
 
 # Initialize OpenAI API
 openai.api_key = get_api_key()
+def get_last_position(vessel_name: str) -> Tuple[Optional[float], Optional[float]]:
+    """
+    Fetch the last reported position for a vessel from sf_consumption_logs.
+    
+    Returns:
+        Tuple[Optional[float], Optional[float]]: (latitude, longitude) or (None, None) if no data
+    """
+    query = f"""
+    SELECT TOP 1 LATITUDE, LONGITUDE
+    FROM sf_consumption_logs
+    WHERE UPPER(vessel_name) = '{vessel_name.upper()}'
+    AND LATITUDE IS NOT NULL 
+    AND LONGITUDE IS NOT NULL
+    ORDER BY reportdate DESC
+    """
+    
+    try:
+        position_data = fetch_data_from_db(query)
+        if not position_data.empty:
+            return (
+                float(position_data.iloc[0]['LATITUDE']),
+                float(position_data.iloc[0]['LONGITUDE'])
+            )
+        return None, None
+    except Exception as e:
+        st.error(f"Error fetching position data: {str(e)}")
+        return None, None
 
+def create_vessel_map(latitude: float, longitude: float) -> folium.Map:
+    """
+    Create a Folium map centered on the vessel's position.
+    """
+    # Create a map centered on the vessel's position
+    m = folium.Map(
+        location=[latitude, longitude],
+        zoom_start=4,
+        tiles='cartodb positron'  # Light theme map
+    )
+    
+    # Add vessel marker
+    folium.Marker(
+        [latitude, longitude],
+        popup='Vessel Position',
+        icon=folium.Icon(color='red', icon='info-sign')
+    ).add_to(m)
+    
+    return m
+
+def show_vessel_position(vessel_name: str):
+    """
+    Display the vessel's last reported position with map and coordinates.
+    """
+    # Get last reported position
+    latitude, longitude = get_last_position(vessel_name)
+    
+    if latitude is not None and longitude is not None:
+        # Create columns for position display
+        col1, col2 = st.columns(2)
+        
+        # Show coordinates
+        with col1:
+            st.metric("Latitude", f"{latitude:.4f}°")
+        with col2:
+            st.metric("Longitude", f"{longitude:.4f}°")
+        
+        # Create and display map
+        vessel_map = create_vessel_map(latitude, longitude)
+        st_folium(vessel_map, height=400, width=700)
+    else:
+        st.warning("No position data available for this vessel")
+       
 def show_vessel_synopsis(vessel_name: str):
     """
     Display a comprehensive vessel synopsis including performance metrics,
@@ -97,7 +169,7 @@ def show_vessel_synopsis(vessel_name: str):
     
     # Last reported position
     st.subheader("Last Reported Position")
-    st.info("Position information will be integrated in future updates")  # Placeholder
+    show_vessel_position(vessel_name)
     
     # Hull Performance Section
     st.subheader("Hull Performance")
