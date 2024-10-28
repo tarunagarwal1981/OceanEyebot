@@ -159,7 +159,7 @@ def show_vessel_position(vessel_name: str):
                     margin-bottom: -2rem;
                 }
                 .element-container {
-                    margin-bottom: 1rem;
+                    margin-bottom: 0rem;  /* Adjusted spacing to remove extra space */
                 }
             </style>
             """, 
@@ -378,6 +378,20 @@ def main():
         """, 
         unsafe_allow_html=True
     )
+    
+    # JavaScript to change the top bar background color
+    st.markdown(
+        """
+        <script>
+            const elements = window.parent.document.querySelectorAll('.main, .viewerTopBar');
+            elements.forEach((element) => {
+                element.style.backgroundColor = '#132337';
+            });
+        </script>
+        """,
+        unsafe_allow_html=True
+    )
+    
     """
     Main function for the Streamlit app.
     """
