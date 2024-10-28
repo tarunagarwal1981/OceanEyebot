@@ -7,3 +7,5 @@ scipy
 anthropic
 sqlalchemy
 psycopg2-binary
+folium
+streamlit_folium
