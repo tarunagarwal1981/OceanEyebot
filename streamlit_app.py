@@ -273,42 +273,37 @@ def handle_user_query(query: str):
     st.session_state.vessel_name = vessel_name
     st.session_state.decision_type = decision_type
     st.session_state.response_type = response_type
-    st.session_state.show_synopsis = decision_type == "vessel_synopsis"
     
     # Handle different types of requests
     if decision_type == "vessel_synopsis":
-        st.session_state.show_synopsis = True
-        return "Here's the vessel synopsis for {vessel_name}. Let me know if you need any specific information explained."
+        show_vessel_synopsis(vessel_name)
+        return f"Here's the vessel synopsis for {vessel_name}. Let me know if you need any specific information explained."  # Fixed string formatting
     
     elif decision_type == "hull_performance":
         hull_analysis, power_loss, hull_condition, hull_chart = analyze_hull_performance(vessel_name)
-        st.session_state.hull_chart = hull_chart
         if response_type == "concise":
             return f"The hull of {vessel_name} is in {hull_condition} condition with {power_loss:.1f}% power loss. Would you like to see detailed analysis and charts?"
         else:
-            st.session_state.show_hull_chart = True
+            st.pyplot(hull_chart)
             return hull_analysis
     
     elif decision_type == "speed_consumption":
         speed_analysis, speed_charts = analyze_speed_consumption(vessel_name)
-        st.session_state.speed_charts = speed_charts
         if response_type == "concise":
             return f"I've analyzed the speed consumption profile for {vessel_name}. Would you like to see the detailed analysis and charts?"
         else:
-            st.session_state.show_speed_charts = True
+            st.pyplot(speed_charts)
             return speed_analysis
     
     elif decision_type == "combined_performance":
         hull_analysis, _, hull_condition, hull_chart = analyze_hull_performance(vessel_name)
         speed_analysis, speed_charts = analyze_speed_consumption(vessel_name)
-        st.session_state.hull_chart = hull_chart
-        st.session_state.speed_charts = speed_charts
         
         if response_type == "concise":
             return f"I have analyzed both hull and speed performance for {vessel_name}. Would you like to see the detailed analysis and charts?"
         else:
-            st.session_state.show_hull_chart = True
-            st.session_state.show_speed_charts = True
+            st.pyplot(hull_chart)
+            st.pyplot(speed_charts)
             return f"{hull_analysis}\n\n{speed_analysis}"
     
     else:
