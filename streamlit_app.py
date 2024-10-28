@@ -371,7 +371,7 @@ def show_vessel_synopsis(vessel_name: str):
         # Display the summary in the styled container
         st.markdown(f'<div class="kpi-summary">{kpi_summary}</div>', unsafe_allow_html=True)
         
-        st.subheader("Key Performance Indicators Summary")
+        #st.subheader("Key Performance Indicators Summary")
         st.markdown(kpi_summary)
         st.markdown("</div>", unsafe_allow_html=True)
         
@@ -550,8 +550,8 @@ def show_vessel_synopsis(vessel_name: str):
                 st.warning("No crew score data available")
         
         # Commercial Performance placeholder
-        with st.expander("Commercial Performance", expanded=False):
-            st.info("Commercial performance metrics will be integrated in future updates")
+        # with st.expander("Commercial Performance", expanded=False):
+        #     st.info("Commercial performance metrics will be integrated in future updates")
         
     except Exception as e:
         st.error(f"Error generating vessel synopsis: {str(e)}")
