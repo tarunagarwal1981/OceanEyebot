@@ -625,14 +625,15 @@ def get_kpi_summary(vessel_name: str, hull_condition: str, cii_rating: str,
                     crew_skill_index: float, capability_index: float, competency_index: float,
                     collaboration_index: float, character_index: float) -> str:
     """
-    Get KPI analysis and recommendations from LLM in a conversational style.
+    Get specific, actionable KPI analysis with color-coded indicators.
     """
     SUMMARY_PROMPT = """
-    You are a vessel performance analyst providing insights about a vessel's performance metrics. 
-    Create a brief, conversational summary of the vessel's current status and provide actionable recommendations.
-    Focus on the most critical areas needing attention or notable achievements worth maintaining.
+    You are a vessel performance analyst providing specific insights about a vessel's performance metrics. 
+    Create a brief, conversational summary starting with "Based on the data of [vessel name]," and provide very specific, actionable recommendations.
+    Use <span class="status-poor">poor</span>, <span class="status-average">average</span>, or <span class="status-good">good</span> to indicate status levels.
 
     Vessel KPIs:
+    Vessel Name: {vessel_name}
     Hull Condition: {hull_condition}
     CII Rating: {cii_rating}
 
@@ -652,20 +653,24 @@ def get_kpi_summary(vessel_name: str, hull_condition: str, cii_rating: str,
     - Character Index: {character_index}%
 
     Guidelines:
-    1. Write in a natural, conversational tone
-    2. Focus on key insights and actionable recommendations
-    3. Prioritize critical areas needing immediate attention
-    4. Mention any positive aspects worth maintaining
-    5. Keep it concise (2-3 sentences about current status, 2-3 sentences about recommendations)
-    6. Make connections between related metrics where relevant
-    7. Use language that a vessel manager would find relatable and actionable
-
-    Avoid bullet points or lists - make it flow like a natural conversation.
+    1. Start with "Based on the data of [vessel name],"
+    2. Use specific numbers and metrics in your analysis
+    3. Mark performance levels using <span> tags:
+       - Use "status-poor" for metrics below 60%
+       - Use "status-average" for metrics between 60-75%
+       - Use "status-good" for metrics above 75%
+    4. Mention specific actionable tasks with timeline indicators where possible
+    5. Keep recommendations precise and measurable
+    6. Total length should be 3-4 sentences
+    
+    Example format:
+    "Based on the data of [vessel name], the vessel's hull condition is <span class="status-poor">poor</span> with 15% power loss, while operating at a <span class="status-average">moderate</span> cost efficiency of 72%. [Specific insights]. Recommend [specific action] within [specific timeframe] to improve [specific metric]."
     """
     
     try:
         messages = [
             {"role": "system", "content": SUMMARY_PROMPT.format(
+                vessel_name=vessel_name,
                 hull_condition=hull_condition,
                 cii_rating=cii_rating,
                 vessel_score=vessel_score,
@@ -680,7 +685,7 @@ def get_kpi_summary(vessel_name: str, hull_condition: str, cii_rating: str,
                 collaboration_index=collaboration_index,
                 character_index=character_index
             )},
-            {"role": "user", "content": "Provide a conversational summary of the vessel's performance and recommendations."}
+            {"role": "user", "content": "Provide a specific summary with color-coded status indicators."}
         ]
         
         response = openai.ChatCompletion.create(
@@ -690,7 +695,33 @@ def get_kpi_summary(vessel_name: str, hull_condition: str, cii_rating: str,
             temperature=0.7
         )
         
-        return response.choices[0].message['content'].strip()
+        # Add the CSS for status colors when displaying the summary
+        status_css = """
+        <style>
+            .status-poor {
+                color: #dc3545;
+                font-weight: 500;
+            }
+            .status-average {
+                color: #ffc107;
+                font-weight: 500;
+            }
+            .status-good {
+                color: #28a745;
+                font-weight: 500;
+            }
+            .kpi-summary {
+                background-color: #f8f9fa;
+                border-radius: 8px;
+                padding: 20px;
+                margin-bottom: 20px;
+                border: 1px solid #e9ecef;
+                line-height: 1.6;
+            }
+        </style>
+        """
+        
+        return status_css + f'<div class="kpi-summary">{response.choices[0].message["content"].strip()}</div>'
         
     except Exception as e:
         return f"Error generating performance summary: {str(e)}"
