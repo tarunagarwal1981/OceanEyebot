@@ -184,19 +184,40 @@ def show_vessel_synopsis(vessel_name: str):
     
     # Create vessel info table
     st.subheader("Vessel Information")
-    col1, col2 = st.columns(2)
-    
-    with col1:
-        st.markdown("**Parameter**")
-        st.markdown("Vessel Name")
-        st.markdown("Hull Condition")
-        st.markdown("CII Rating")
-    
-    with col2:
-        st.markdown("**Value**")
-        st.markdown(vessel_name)
-        st.markdown(hull_condition if hull_condition else "N/A")
-        st.markdown("N/A")  # Placeholder for CII Rating
+    st.markdown(
+        """
+        <style>
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            border: 1px solid #F4F4F4;
+            padding: 8px;
+            text-align: left;
+        }
+        </style>
+        <table>
+            <tr>
+                <th>Parameter</th>
+                <th>Value</th>
+            </tr>
+            <tr>
+                <td>Vessel Name</td>
+                <td>{vessel_name}</td>
+            </tr>
+            <tr>
+                <td>Hull Condition</td>
+                <td>{hull_condition if hull_condition else "N/A"}</td>
+            </tr>
+            <tr>
+                <td>CII Rating</td>
+                <td>N/A</td>
+            </tr>
+        </table>
+        """,
+        unsafe_allow_html=True
+    )
     
     # Last reported position
     st.subheader("Last Reported Position")
@@ -391,7 +412,6 @@ def main():
         """,
         unsafe_allow_html=True
     )
-    
     
     st.title("Advanced Vessel Performance Chatbot")
     st.markdown("Ask me about vessel performance, speed consumption, or request a complete vessel synopsis!")
