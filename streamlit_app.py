@@ -273,37 +273,42 @@ def handle_user_query(query: str):
     st.session_state.vessel_name = vessel_name
     st.session_state.decision_type = decision_type
     st.session_state.response_type = response_type
+    st.session_state.show_synopsis = decision_type == "vessel_synopsis"
     
     # Handle different types of requests
     if decision_type == "vessel_synopsis":
-        show_vessel_synopsis(vessel_name)
-        return None  # No need for additional response as synopsis shows everything
+        st.session_state.show_synopsis = True
+        return "Here's the vessel synopsis for {vessel_name}. Let me know if you need any specific information explained."
     
     elif decision_type == "hull_performance":
         hull_analysis, power_loss, hull_condition, hull_chart = analyze_hull_performance(vessel_name)
+        st.session_state.hull_chart = hull_chart
         if response_type == "concise":
             return f"The hull of {vessel_name} is in {hull_condition} condition with {power_loss:.1f}% power loss. Would you like to see detailed analysis and charts?"
         else:
-            st.pyplot(hull_chart)
+            st.session_state.show_hull_chart = True
             return hull_analysis
     
     elif decision_type == "speed_consumption":
         speed_analysis, speed_charts = analyze_speed_consumption(vessel_name)
+        st.session_state.speed_charts = speed_charts
         if response_type == "concise":
             return f"I've analyzed the speed consumption profile for {vessel_name}. Would you like to see the detailed analysis and charts?"
         else:
-            st.pyplot(speed_charts)
+            st.session_state.show_speed_charts = True
             return speed_analysis
     
     elif decision_type == "combined_performance":
         hull_analysis, _, hull_condition, hull_chart = analyze_hull_performance(vessel_name)
         speed_analysis, speed_charts = analyze_speed_consumption(vessel_name)
+        st.session_state.hull_chart = hull_chart
+        st.session_state.speed_charts = speed_charts
         
         if response_type == "concise":
             return f"I have analyzed both hull and speed performance for {vessel_name}. Would you like to see the detailed analysis and charts?"
         else:
-            st.pyplot(hull_chart)
-            st.pyplot(speed_charts)
+            st.session_state.show_hull_chart = True
+            st.session_state.show_speed_charts = True
             return f"{hull_analysis}\n\n{speed_analysis}"
     
     else:
@@ -340,14 +345,31 @@ def main():
     st.title("Advanced Vessel Performance Chatbot")
     st.markdown("Ask me about vessel performance, speed consumption, or request a complete vessel synopsis!")
     
-    # Initialize chat history
+    # Initialize session state variables if they don't exist
     if 'messages' not in st.session_state:
         st.session_state.messages = []
+    if 'show_synopsis' not in st.session_state:
+        st.session_state.show_synopsis = False
+    if 'show_hull_chart' not in st.session_state:
+        st.session_state.show_hull_chart = False
+    if 'show_speed_charts' not in st.session_state:
+        st.session_state.show_speed_charts = False
     
     # Display chat history
     for message in st.session_state.messages:
         with st.chat_message(message["role"]):
             st.markdown(message["content"])
+    
+    # Show synopsis if requested
+    if st.session_state.show_synopsis and 'vessel_name' in st.session_state:
+        show_vessel_synopsis(st.session_state.vessel_name)
+    
+    # Show charts if requested
+    if st.session_state.show_hull_chart and 'hull_chart' in st.session_state:
+        st.pyplot(st.session_state.hull_chart)
+    
+    if st.session_state.show_speed_charts and 'speed_charts' in st.session_state:
+        st.pyplot(st.session_state.speed_charts)
     
     # Handle user input
     if prompt := st.chat_input("What would you like to know about vessel performance?"):
@@ -362,10 +384,24 @@ def main():
         else:
             response = handle_user_query(prompt)
         
-        if response:  # Only append response if it's not None (synopsis handles its own display)
+        if response:  # Only append response if it's not None
             st.session_state.messages.append({"role": "assistant", "content": response})
             with st.chat_message("assistant"):
                 st.markdown(response)
 
+# Add these functions to clear state when needed
+def clear_charts():
+    """Clear chart-related session state"""
+    st.session_state.show_hull_chart = False
+    st.session_state.show_speed_charts = False
+    if 'hull_chart' in st.session_state:
+        del st.session_state.hull_chart
+    if 'speed_charts' in st.session_state:
+        del st.session_state.speed_charts
+
+def clear_synopsis():
+    """Clear synopsis-related session state"""
+    st.session_state.show_synopsis = False
+   
 if __name__ == "__main__":
     main()
