@@ -185,17 +185,17 @@ def show_vessel_synopsis(vessel_name: str):
     # Create vessel info table
     st.subheader("Vessel Information")
     st.markdown(
-        """
+        f"""
         <style>
-        table {
+        table {{
             width: 100%;
             border-collapse: collapse;
-        }
-        th, td {
+        }}
+        th, td {{
             border: 1px solid #F4F4F4;
             padding: 8px;
             text-align: left;
-        }
+        }}
         </style>
         <table>
             <tr>
