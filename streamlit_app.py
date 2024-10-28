@@ -198,6 +198,23 @@ def show_vessel_synopsis(vessel_name: str):
         st.markdown(hull_condition if hull_condition else "N/A")
         st.markdown("N/A")  # Placeholder for CII Rating
     
+    # Apply styling to the vessel info table
+    st.markdown(
+        """
+        <style>
+            .stMarkdown table {
+                border: 1px solid #F4F4F4;
+                border-collapse: collapse;
+            }
+            .stMarkdown th, .stMarkdown td {
+                border: 1px solid #F4F4F4;
+                padding: 8px;
+            }
+        </style>
+        """, 
+        unsafe_allow_html=True
+    )
+    
     # Last reported position
     st.subheader("Last Reported Position")
     show_vessel_position(vessel_name)
@@ -361,6 +378,12 @@ def main():
     st.markdown(
         """
         <style>
+            body, .block-container, .stApp {
+                background-color: #132337;
+                font-family: 'Nunito', sans-serif;
+                font-size: 14px;
+                color: #F4F4F4;
+            }
             .block-container {
                 padding-top: 1rem;
                 padding-bottom: 0rem;
@@ -373,6 +396,9 @@ def main():
             }
             .stMetric {
                 margin-bottom: 0.5rem;
+            }
+            .css-1oe6wy4, .css-1v3fvcr, .css-6nw5cn {
+                background-color: #132337;
             }
         </style>
         """, 
