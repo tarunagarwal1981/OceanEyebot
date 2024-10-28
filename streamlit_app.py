@@ -342,56 +342,35 @@ def show_vessel_synopsis(vessel_name: str):
             character_index
         )
         
-        # Display KPI Summary in a card with enhanced styling
+        # Add the CSS using st.markdown
         st.markdown("""
             <style>
-            .kpi-summary {
-                background-color: #f8f9fa;
-                border-radius: 8px;
-                padding: 20px;
-                margin-bottom: 20px;
-                border: 1px solid #e9ecef;
-            }
-            .kpi-summary h3 {
-                color: #1a237e;
-                margin-bottom: 15px;
-            }
-            .kpi-summary ul {
-                list-style-type: none;
-                padding-left: 0;
-            }
-            .kpi-summary li {
-                margin-bottom: 12px;
-                padding-left: 20px;
-                position: relative;
-            }
-            .kpi-summary li:before {
-                content: "•";
-                position: absolute;
-                left: 0;
-                color: #1a237e;
-            }
-            .score-indicator {
-                padding: 2px 6px;
-                border-radius: 4px;
-                font-weight: 500;
-            }
-            .score-good {
-                background-color: #e8f5e9;
-                color: #2e7d32;
-            }
-            .score-warning {
-                background-color: #fff3e0;
-                color: #ef6c00;
-            }
-            .score-critical {
-                background-color: #ffebee;
-                color: #c62828;
-            }
+                .status-poor {
+                    color: #dc3545;
+                    font-weight: 500;
+                }
+                .status-average {
+                    color: #ffc107;
+                    font-weight: 500;
+                }
+                .status-good {
+                    color: #28a745;
+                    font-weight: 500;
+                }
+                .kpi-summary {
+                    background-color: #f8f9fa;
+                    border-radius: 8px;
+                    padding: 20px;
+                    margin-bottom: 20px;
+                    border: 1px solid #e9ecef;
+                    line-height: 1.6;
+                }
             </style>
-            """, unsafe_allow_html=True)
+        """, unsafe_allow_html=True)
         
-        st.markdown("<div class='kpi-summary'>", unsafe_allow_html=True)
+        # Display the summary in the styled container
+        st.markdown(f'<div class="kpi-summary">{kpi_summary}</div>', unsafe_allow_html=True)
+        
         st.subheader("Key Performance Indicators Summary")
         st.markdown(kpi_summary)
         st.markdown("</div>", unsafe_allow_html=True)
@@ -629,42 +608,31 @@ def get_kpi_summary(vessel_name: str, hull_condition: str, cii_rating: str,
     """
     SUMMARY_PROMPT = """
     You are a vessel performance analyst providing specific insights about a vessel's performance metrics. 
-    Create a brief, conversational summary starting with "Based on the data of [vessel name]," and provide very specific, actionable recommendations.
-    Use <span class="status-poor">poor</span>, <span class="status-average">average</span>, or <span class="status-good">good</span> to indicate status levels.
+    Create a brief, conversational summary of 3-4 sentences with specific, actionable recommendations.
 
-    Vessel KPIs:
+    Important formatting rules:
+    1. Numbers should be formatted to one decimal place without the % symbol in the span tags
+    2. Use words 'poor', 'average', or 'good' for status indicators
+    3. Start with "Based on the data of [vessel name]"
+    4. Highlight status using following rules:
+       - <span class="status-poor">poor</span> for scores below 60
+       - <span class="status-average">average</span> for scores 60-75
+       - <span class="status-good">good</span> for scores above 75
+       
+    Example correct format:
+    "Based on the data of [vessel name], the vessel shows <span class="status-poor">poor</span> performance with cost score at <span class="status-poor">55.4</span>."
+
+    Current Vessel Data:
     Vessel Name: {vessel_name}
     Hull Condition: {hull_condition}
     CII Rating: {cii_rating}
+    Overall Vessel Score: {vessel_score:.1f}%
+    Cost Score: {cost_score:.1f}%
+    Operation Score: {operation_score:.1f}%
+    Crew Skill Index: {crew_skill_index:.1f}%
+    Competency Index: {competency_index:.1f}%
 
-    Vessel Score Components (Target: >75%):
-    - Overall Vessel Score: {vessel_score}%
-    - Cost Score: {cost_score}%
-    - Digitalization Score: {digitalization_score}%
-    - Environment Score: {environment_score}%
-    - Operation Score: {operation_score}%
-    - Reliability Score: {reliability_score}%
-
-    Crew Performance Components (Target: >80%):
-    - Overall Crew Skill Index: {crew_skill_index}%
-    - Capability Index: {capability_index}%
-    - Competency Index: {competency_index}%
-    - Collaboration Index: {collaboration_index}%
-    - Character Index: {character_index}%
-
-    Guidelines:
-    1. Start with "Based on the data of [vessel name],"
-    2. Use specific numbers and metrics in your analysis
-    3. Mark performance levels using <span> tags:
-       - Use "status-poor" for metrics below 60%
-       - Use "status-average" for metrics between 60-75%
-       - Use "status-good" for metrics above 75%
-    4. Mention specific actionable tasks with timeline indicators where possible
-    5. Keep recommendations precise and measurable
-    6. Total length should be 3-4 sentences
-    
-    Example format:
-    "Based on the data of [vessel name], the vessel's hull condition is <span class="status-poor">poor</span> with 15% power loss, while operating at a <span class="status-average">moderate</span> cost efficiency of 72%. [Specific insights]. Recommend [specific action] within [specific timeframe] to improve [specific metric]."
+    Focus on most critical metrics needing attention and provide specific, time-bound recommendations.
     """
     
     try:
@@ -695,37 +663,11 @@ def get_kpi_summary(vessel_name: str, hull_condition: str, cii_rating: str,
             temperature=0.7
         )
         
-        # Add the CSS for status colors when displaying the summary
-        status_css = """
-        <style>
-            .status-poor {
-                color: #dc3545;
-                font-weight: 500;
-            }
-            .status-average {
-                color: #ffc107;
-                font-weight: 500;
-            }
-            .status-good {
-                color: #28a745;
-                font-weight: 500;
-            }
-            .kpi-summary {
-                background-color: #f8f9fa;
-                border-radius: 8px;
-                padding: 20px;
-                margin-bottom: 20px;
-                border: 1px solid #e9ecef;
-                line-height: 1.6;
-            }
-        </style>
-        """
-        
-        return status_css + f'<div class="kpi-summary">{response.choices[0].message["content"].strip()}</div>'
+        return response.choices[0].message['content'].strip()
         
     except Exception as e:
         return f"Error generating performance summary: {str(e)}"
-
+       
 def handle_user_query(query: str):
     """
     Process user query and return appropriate response.
