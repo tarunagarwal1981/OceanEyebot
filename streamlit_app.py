@@ -379,110 +379,87 @@ def main():
         """
         <style>
             /* Main background and text */
-            body, .block-container, .stApp, .stTextInput, .stTextArea, 
-            .css-1oe6wy4, .css-1v3fvcr, .css-6nw5cn, .stButton, .stRadio, .stSlider {
+            .stApp {
                 background-color: #132337;
-                font-family: 'Nunito', sans-serif;
-                font-size: 14px;
-                color: #F4F4F4;
             }
 
-            /* Top bar styling */
-            header[data-testid="stHeader"] {
-                background-color: #132337;
-                border-bottom: 1px solid #1f3753;
-            }
-
-            /* Chat input area styling */
-            .stChatInputContainer {
+            /* Footer/bottom area specific styling */
+            .stChatFloatingInputContainer, 
+            .stChatInputContainer,
+            footer {
                 background-color: #132337 !important;
             }
-            
-            .stChatInput {
+
+            /* Chat input container */
+            section[data-testid="stChatInput"] {
+                position: fixed;
+                bottom: 0;
+                background-color: #132337 !important;
+                padding: 1rem;
+                z-index: 100;
+            }
+
+            /* Chat input box */
+            .stChatInput textarea {
                 background-color: #1f3753 !important;
                 border-color: #2d4b6d !important;
                 color: white !important;
             }
 
-            /* Chat input placeholder */
-            .stChatInput::placeholder {
-                color: #a3b8cc !important;
-            }
-
-            /* Submit button in chat */
-            .stChatInput > button {
-                background-color: #2d4b6d !important;
+            /* Message input container */
+            .stChatMessageInput {
+                background-color: #132337 !important;
                 border-color: #2d4b6d !important;
             }
 
-            /* Scrollbar styling */
-            ::-webkit-scrollbar {
-                width: 10px;
+            /* Hide default footer */
+            footer {
+                visibility: hidden;
+            }
+
+            /* Ensure content doesn't get hidden behind fixed chat input */
+            .main > .block-container {
+                padding-bottom: 100px;
+            }
+
+            /* Existing styles */
+            body, .block-container, .stTextInput, .stTextArea, 
+            .css-1oe6wy4, .css-1v3fvcr, .css-6nw5cn, .stButton, .stRadio, .stSlider {
+                background-color: #132337;
+                font-family: 'Nunito', sans-serif;
+                color: #F4F4F4;
+            }
+
+            header[data-testid="stHeader"] {
                 background-color: #132337;
             }
 
-            ::-webkit-scrollbar-thumb {
-                background-color: #2d4b6d;
-                border-radius: 5px;
-            }
-
-            /* Container spacing */
-            .block-container {
-                padding-top: 1rem;
-                padding-bottom: 0rem;
-            }
-
-            .element-container {
-                margin-bottom: 1rem;
-            }
-
-            .stMarkdown {
-                margin-bottom: 0rem;
-            }
-
-            .stMetric {
-                margin-bottom: 0.5rem;
-            }
-
-            /* Toolbar icons */
             [data-testid="stToolbar"] {
                 background-color: #132337;
             }
-            
+
             .stActionButton {
                 color: #F4F4F4 !important;
             }
 
-            /* Additional elements */
-            .css-1y4p8pa {
-                width: 100%;
-                padding: 6rem 1rem 1rem;
-                max-width: 46rem;
+            /* Additional elements to ensure full dark theme */
+            div[data-testid="stChatMessageContent"] {
+                background-color: #1f3753 !important;
+                color: white !important;
+            }
+
+            .stMarkdown, .stMarkdown p {
+                color: #F4F4F4 !important;
             }
         </style>
         """, 
         unsafe_allow_html=True
     )
-    
-    # JavaScript to change the top bar background color
-    st.markdown(
-        """
-        <script>
-            const elements = window.parent.document.querySelectorAll('.main, .viewerTopBar');
-            elements.forEach((element) => {
-                element.style.backgroundColor = '#132337';
-            });
-        </script>
-        """,
-        unsafe_allow_html=True
-    )
-    
-    """
-    Main function for the Streamlit app.
-    """
+
     st.title("Advanced Vessel Performance Chatbot")
     st.markdown("Ask me about vessel performance, speed consumption, or request a complete vessel synopsis!")
     
+       
     # Initialize session state variables if they don't exist
     if 'messages' not in st.session_state:
         st.session_state.messages = []
