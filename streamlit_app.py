@@ -198,23 +198,6 @@ def show_vessel_synopsis(vessel_name: str):
         st.markdown(hull_condition if hull_condition else "N/A")
         st.markdown("N/A")  # Placeholder for CII Rating
     
-    # Apply styling to the vessel info table
-    st.markdown(
-        """
-        <style>
-            .stMarkdown table {
-                border: 1px solid #F4F4F4;
-                border-collapse: collapse;
-            }
-            .stMarkdown th, .stMarkdown td {
-                border: 1px solid #F4F4F4;
-                padding: 8px;
-            }
-        </style>
-        """, 
-        unsafe_allow_html=True
-    )
-    
     # Last reported position
     st.subheader("Last Reported Position")
     show_vessel_position(vessel_name)
@@ -378,88 +361,29 @@ def main():
     st.markdown(
         """
         <style>
-            /* Main background and text */
-            .stApp {
-                background-color: #132337;
+            .block-container {
+                padding-top: 1rem;
+                padding-bottom: 0rem;
             }
-
-            /* Footer/bottom area specific styling */
-            .stChatFloatingInputContainer, 
-            .stChatInputContainer,
-            footer {
-                background-color: #132337 !important;
+            .element-container {
+                margin-bottom: 1rem;
             }
-
-            /* Chat input container */
-            section[data-testid="stChatInput"] {
-                position: fixed;
-                bottom: 0;
-                background-color: #132337 !important;
-                padding: 1rem;
-                z-index: 100;
+            .stMarkdown {
+                margin-bottom: 0rem;
             }
-
-            /* Chat input box */
-            .stChatInput textarea {
-                background-color: #1f3753 !important;
-                border-color: #2d4b6d !important;
-                color: white !important;
-            }
-
-            /* Message input container */
-            .stChatMessageInput {
-                background-color: #132337 !important;
-                border-color: #2d4b6d !important;
-            }
-
-            /* Hide default footer */
-            footer {
-                visibility: hidden;
-            }
-
-            /* Ensure content doesn't get hidden behind fixed chat input */
-            .main > .block-container {
-                padding-bottom: 100px;
-            }
-
-            /* Existing styles */
-            body, .block-container, .stTextInput, .stTextArea, 
-            .css-1oe6wy4, .css-1v3fvcr, .css-6nw5cn, .stButton, .stRadio, .stSlider {
-                background-color: #132337;
-                font-family: 'Nunito', sans-serif;
-                color: #F4F4F4;
-            }
-
-            header[data-testid="stHeader"] {
-                background-color: #132337;
-            }
-
-            [data-testid="stToolbar"] {
-                background-color: #132337;
-            }
-
-            .stActionButton {
-                color: #F4F4F4 !important;
-            }
-
-            /* Additional elements to ensure full dark theme */
-            div[data-testid="stChatMessageContent"] {
-                background-color: #1f3753 !important;
-                color: white !important;
-            }
-
-            .stMarkdown, .stMarkdown p {
-                color: #F4F4F4 !important;
+            .stMetric {
+                margin-bottom: 0.5rem;
             }
         </style>
         """, 
         unsafe_allow_html=True
     )
-
+    """
+    Main function for the Streamlit app.
+    """
     st.title("Advanced Vessel Performance Chatbot")
     st.markdown("Ask me about vessel performance, speed consumption, or request a complete vessel synopsis!")
     
-       
     # Initialize session state variables if they don't exist
     if 'messages' not in st.session_state:
         st.session_state.messages = []
