@@ -401,8 +401,22 @@ def main():
         """, 
         unsafe_allow_html=True
     )
+    
+    # JavaScript to change the top bar background color
+    st.markdown(
+        """
+        <script>
+            const elements = window.parent.document.querySelectorAll('.main, .viewerTopBar');
+            elements.forEach((element) => {
+                element.style.backgroundColor = '#132337';
+            });
+        </script>
+        """,
+        unsafe_allow_html=True
+    )
+    
     """
-    #Main function for the Streamlit app.
+    Main function for the Streamlit app.
     """
     st.title("Advanced Vessel Performance Chatbot")
     st.markdown("Ask me about vessel performance, speed consumption, or request a complete vessel synopsis!")
