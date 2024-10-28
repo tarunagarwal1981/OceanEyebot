@@ -251,9 +251,6 @@ def show_vessel_synopsis(vessel_name: str):
     Display a comprehensive vessel synopsis including KPI summary, performance metrics,
     charts, and other relevant information.
     """
-    # Create header with vessel name
-    st.header(f"Vessel Synopsis - {vessel_name}")
-    
     try:
         # Get hull performance data first
         hull_analysis, power_loss, hull_condition, hull_chart = analyze_hull_performance(vessel_name)
@@ -324,25 +321,10 @@ def show_vessel_synopsis(vessel_name: str):
         else:
             crew_skill_index = capability_index = competency_index = collaboration_index = character_index = 0.0
         
-        # Get KPI summary from LLM and display it
-        kpi_summary = get_kpi_summary(
-            vessel_name,
-            hull_condition,
-            cii_rating,
-            vessel_score,
-            cost_score,
-            digitalization_score,
-            environment_score,
-            operation_score,
-            reliability_score,
-            crew_skill_index,
-            capability_index,
-            competency_index,
-            collaboration_index,
-            character_index
-        )
+        # Create header with vessel name
+        st.header(f"Vessel Synopsis - {vessel_name}")
         
-        # Add the CSS using st.markdown
+        # Add CSS for status colors and summary styling
         st.markdown("""
             <style>
                 .status-poor {
@@ -365,19 +347,38 @@ def show_vessel_synopsis(vessel_name: str):
                     border: 1px solid #e9ecef;
                     line-height: 1.6;
                 }
+                div[data-testid="stExpander"] div.element-container {
+                    margin: 0 !important;
+                }
+                div.element-container {
+                    margin-bottom: 0 !important;
+                }
             </style>
         """, unsafe_allow_html=True)
         
-        # Display the summary in the styled container
+        # Get and display KPI summary
+        kpi_summary = get_kpi_summary(
+            vessel_name,
+            hull_condition,
+            cii_rating,
+            vessel_score,
+            cost_score,
+            digitalization_score,
+            environment_score,
+            operation_score,
+            reliability_score,
+            crew_skill_index,
+            capability_index,
+            competency_index,
+            collaboration_index,
+            character_index
+        )
+        
+        # Display the summary
         st.markdown(f'<div class="kpi-summary">{kpi_summary}</div>', unsafe_allow_html=True)
         
-        #st.subheader("Key Performance Indicators Summary")
-        st.markdown(kpi_summary)
-        st.markdown("</div>", unsafe_allow_html=True)
-        
-        # Create expandable sections for detailed information
+        # Create vessel info table
         with st.expander("Vessel Information", expanded=True):
-            # Basic vessel info table
             st.markdown(
                 f"""
                 <table>
@@ -402,85 +403,60 @@ def show_vessel_synopsis(vessel_name: str):
                 unsafe_allow_html=True
             )
         
-        # Position Information
+        # Display vessel position
         with st.expander("Last Reported Position", expanded=True):
             show_vessel_position(vessel_name)
         
-        # Performance Metrics
-        with st.expander("Performance Metrics", expanded=True):
-            # Hull Performance
-            st.subheader("Hull Performance")
+        # Display hull performance
+        with st.expander("Hull Performance", expanded=True):
             if hull_chart:
                 st.pyplot(hull_chart)
                 st.markdown(hull_analysis)
             else:
                 st.warning("No hull performance data available")
-            
-            # Speed Consumption
-            st.subheader("Speed Consumption Profile")
+        
+        # Display speed consumption
+        with st.expander("Speed Consumption Profile", expanded=True):
             if speed_charts:
                 st.pyplot(speed_charts)
                 st.markdown(speed_analysis)
             else:
                 st.warning("No speed consumption data available")
         
-        # Vessel Score Details
+        # Display vessel score details
         with st.expander("Vessel Score Details", expanded=True):
             if vessel_score > 0:
                 col1, col2 = st.columns([1, 2])
                 with col1:
-                    # Display main vessel score with color indicator
-                    score_color = (
-                        "good" if vessel_score >= 75 
-                        else "warning" if vessel_score >= 60 
-                        else "critical"
-                    )
-                    st.markdown(
-                        f"""
-                        <div style='text-align: center;'>
-                            <h4>Overall Vessel Score</h4>
-                            <span class='score-indicator score-{score_color}'>
-                                {vessel_score:.1f}%
-                            </span>
-                        </div>
-                        """,
-                        unsafe_allow_html=True
-                    )
+                    st.metric("Overall Vessel Score", f"{vessel_score:.1f}%")
                 
                 with col2:
-                    # Component scores table
                     st.markdown(
                         f"""
-                        <table class="score-table">
+                        <table>
                             <tr>
                                 <th>Component</th>
                                 <th>Score</th>
-                                <th>Status</th>
                             </tr>
                             <tr>
                                 <td>Cost</td>
-                                <td>{cost_score:.1f}%</td>
-                                <td><span class='score-indicator score-{"good" if cost_score >= 75 else "warning" if cost_score >= 60 else "critical"}'>{cost_score:.1f}%</span></td>
+                                <td><span class='status-{"good" if cost_score >= 75 else "average" if cost_score >= 60 else "poor"}'>{cost_score:.1f}%</span></td>
                             </tr>
                             <tr>
                                 <td>Digitalization</td>
-                                <td>{digitalization_score:.1f}%</td>
-                                <td><span class='score-indicator score-{"good" if digitalization_score >= 75 else "warning" if digitalization_score >= 60 else "critical"}'>{digitalization_score:.1f}%</span></td>
+                                <td><span class='status-{"good" if digitalization_score >= 75 else "average" if digitalization_score >= 60 else "poor"}'>{digitalization_score:.1f}%</span></td>
                             </tr>
                             <tr>
                                 <td>Environment</td>
-                                <td>{environment_score:.1f}%</td>
-                                <td><span class='score-indicator score-{"good" if environment_score >= 75 else "warning" if environment_score >= 60 else "critical"}'>{environment_score:.1f}%</span></td>
+                                <td><span class='status-{"good" if environment_score >= 75 else "average" if environment_score >= 60 else "poor"}'>{environment_score:.1f}%</span></td>
                             </tr>
                             <tr>
                                 <td>Operation</td>
-                                <td>{operation_score:.1f}%</td>
-                                <td><span class='score-indicator score-{"good" if operation_score >= 75 else "warning" if operation_score >= 60 else "critical"}'>{operation_score:.1f}%</span></td>
+                                <td><span class='status-{"good" if operation_score >= 75 else "average" if operation_score >= 60 else "poor"}'>{operation_score:.1f}%</span></td>
                             </tr>
                             <tr>
                                 <td>Reliability</td>
-                                <td>{reliability_score:.1f}%</td>
-                                <td><span class='score-indicator score-{"good" if reliability_score >= 75 else "warning" if reliability_score >= 60 else "critical"}'>{reliability_score:.1f}%</span></td>
+                                <td><span class='status-{"good" if reliability_score >= 75 else "average" if reliability_score >= 60 else "poor"}'>{reliability_score:.1f}%</span></td>
                             </tr>
                         </table>
                         """,
@@ -489,58 +465,36 @@ def show_vessel_synopsis(vessel_name: str):
             else:
                 st.warning("No vessel score data available")
         
-        # Crew Score Details
+        # Display crew score details
         with st.expander("Crew Score Details", expanded=True):
             if crew_skill_index > 0:
                 col1, col2 = st.columns([1, 2])
                 with col1:
-                    # Display main crew skill index with color indicator
-                    score_color = (
-                        "good" if crew_skill_index >= 80 
-                        else "warning" if crew_skill_index >= 70 
-                        else "critical"
-                    )
-                    st.markdown(
-                        f"""
-                        <div style='text-align: center;'>
-                            <h4>Crew Skill Index</h4>
-                            <span class='score-indicator score-{score_color}'>
-                                {crew_skill_index:.1f}%
-                            </span>
-                        </div>
-                        """,
-                        unsafe_allow_html=True
-                    )
+                    st.metric("Crew Skill Index", f"{crew_skill_index:.1f}%")
                 
                 with col2:
-                    # Component indices table
                     st.markdown(
                         f"""
-                        <table class="score-table">
+                        <table>
                             <tr>
                                 <th>Component</th>
                                 <th>Score</th>
-                                <th>Status</th>
                             </tr>
                             <tr>
                                 <td>Capability</td>
-                                <td>{capability_index:.1f}%</td>
-                                <td><span class='score-indicator score-{"good" if capability_index >= 80 else "warning" if capability_index >= 70 else "critical"}'>{capability_index:.1f}%</span></td>
+                                <td><span class='status-{"good" if capability_index >= 75 else "average" if capability_index >= 60 else "poor"}'>{capability_index:.1f}%</span></td>
                             </tr>
                             <tr>
                                 <td>Competency</td>
-                                <td>{competency_index:.1f}%</td>
-                                <td><span class='score-indicator score-{"good" if competency_index >= 80 else "warning" if competency_index >= 70 else "critical"}'>{competency_index:.1f}%</span></td>
+                                <td><span class='status-{"good" if competency_index >= 75 else "average" if competency_index >= 60 else "poor"}'>{competency_index:.1f}%</span></td>
                             </tr>
                             <tr>
                                 <td>Collaboration</td>
-                                <td>{collaboration_index:.1f}%</td>
-                                <td><span class='score-indicator score-{"good" if collaboration_index >= 80 else "warning" if collaboration_index >= 70 else "critical"}'>{collaboration_index:.1f}%</span></td>
+                                <td><span class='status-{"good" if collaboration_index >= 75 else "average" if collaboration_index >= 60 else "poor"}'>{collaboration_index:.1f}%</span></td>
                             </tr>
                             <tr>
                                 <td>Character</td>
-                                <td>{character_index:.1f}%</td>
-                                <td><span class='score-indicator score-{"good" if character_index >= 80 else "warning" if character_index >= 70 else "critical"}'>{character_index:.1f}%</span></td>
+                                <td><span class='status-{"good" if character_index >= 75 else "average" if character_index >= 60 else "poor"}'>{character_index:.1f}%</span></td>
                             </tr>
                         </table>
                         """,
@@ -548,10 +502,6 @@ def show_vessel_synopsis(vessel_name: str):
                     )
             else:
                 st.warning("No crew score data available")
-        
-        # Commercial Performance placeholder
-        # with st.expander("Commercial Performance", expanded=False):
-        #     st.info("Commercial performance metrics will be integrated in future updates")
         
     except Exception as e:
         st.error(f"Error generating vessel synopsis: {str(e)}")
@@ -608,31 +558,40 @@ def get_kpi_summary(vessel_name: str, hull_condition: str, cii_rating: str,
     """
     SUMMARY_PROMPT = """
     You are a vessel performance analyst providing specific insights about a vessel's performance metrics. 
-    Create a brief, conversational summary of 3-4 sentences with specific, actionable recommendations.
+    Create a brief, conversational summary within 3-4 sentences with specific, actionable recommendations.
+    
+    Rules for summary:
+    1. Start with "Based on the data of [vessel name]"
+    2. Highlight metrics using span tags with proper color classes:
+       - Use <span class="status-poor">[value]</span>% for values below 60
+       - Use <span class="status-average">[value]</span>% for values between 60-75
+       - Use <span class="status-good">[value]</span>% for values above 75
+    3. Format conditions/ratings:
+       - Use <span class="status-poor">poor</span> for poor conditions
+       - Use <span class="status-average">average</span> for average conditions
+       - Use <span class="status-good">good</span> for good conditions
+    4. Always include:
+       - Key underperforming metrics
+       - Specific recommendations with timelines
+       - Most critical areas requiring immediate attention
+    5. Format numbers to 1 decimal place
+    6. Include % symbol after the span tag for metrics
 
-    Important formatting rules:
-    1. Numbers should be formatted to one decimal place without the % symbol in the span tags
-    2. Use words 'poor', 'average', or 'good' for status indicators
-    3. Start with "Based on the data of [vessel name]"
-    4. Highlight status using following rules:
-       - <span class="status-poor">poor</span> for scores below 60
-       - <span class="status-average">average</span> for scores 60-75
-       - <span class="status-good">good</span> for scores above 75
-       
-    Example correct format:
-    "Based on the data of [vessel name], the vessel shows <span class="status-poor">poor</span> performance with cost score at <span class="status-poor">55.4</span>."
-
-    Current Vessel Data:
-    Vessel Name: {vessel_name}
-    Hull Condition: {hull_condition}
-    CII Rating: {cii_rating}
-    Overall Vessel Score: {vessel_score:.1f}%
-    Cost Score: {cost_score:.1f}%
-    Operation Score: {operation_score:.1f}%
-    Crew Skill Index: {crew_skill_index:.1f}%
-    Competency Index: {competency_index:.1f}%
-
-    Focus on most critical metrics needing attention and provide specific, time-bound recommendations.
+    Current Data:
+    - Vessel Name: {vessel_name}
+    - Hull Condition: {hull_condition}
+    - CII Rating: {cii_rating}
+    - Overall Score: {vessel_score:.1f}%
+    - Cost: {cost_score:.1f}%
+    - Operation: {operation_score:.1f}%
+    - Environment: {environment_score:.1f}%
+    - Reliability: {reliability_score:.1f}%
+    - Digitalization: {digitalization_score:.1f}%
+    - Crew Skill: {crew_skill_index:.1f}%
+    - Crew Competency: {competency_index:.1f}%
+    
+    Example:
+    "Based on the data of Example Vessel, overall performance is <span class="status-poor">poor</span> with vessel score at <span class="status-poor">55.4</span>%. The operation score is at <span class="status-poor">45.6</span>% requiring immediate attention."
     """
     
     try:
@@ -653,7 +612,7 @@ def get_kpi_summary(vessel_name: str, hull_condition: str, cii_rating: str,
                 collaboration_index=collaboration_index,
                 character_index=character_index
             )},
-            {"role": "user", "content": "Provide a specific summary with color-coded status indicators."}
+            {"role": "user", "content": "Generate a concise performance summary highlighting critical areas and specific recommendations."}
         ]
         
         response = openai.ChatCompletion.create(
