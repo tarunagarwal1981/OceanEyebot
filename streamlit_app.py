@@ -625,15 +625,16 @@ def get_kpi_summary(vessel_name: str, hull_condition: str, cii_rating: str,
                     crew_skill_index: float, capability_index: float, competency_index: float,
                     collaboration_index: float, character_index: float) -> str:
     """
-    Get KPI analysis and recommendations from LLM.
+    Get KPI analysis and recommendations from LLM in a conversational style.
     """
     SUMMARY_PROMPT = """
-    You are a vessel performance analyst. Based on the following KPIs for the vessel, provide a brief bullet-point summary
-    with status and specific recommendations for each major KPI category. Focus on actionable insights.
+    You are a vessel performance analyst providing insights about a vessel's performance metrics. 
+    Create a brief, conversational summary of the vessel's current status and provide actionable recommendations.
+    Focus on the most critical areas needing attention or notable achievements worth maintaining.
 
     Vessel KPIs:
-    - Hull Condition: {hull_condition}
-    - CII Rating: {cii_rating}
+    Hull Condition: {hull_condition}
+    CII Rating: {cii_rating}
 
     Vessel Score Components (Target: >75%):
     - Overall Vessel Score: {vessel_score}%
@@ -650,24 +651,16 @@ def get_kpi_summary(vessel_name: str, hull_condition: str, cii_rating: str,
     - Collaboration Index: {collaboration_index}%
     - Character Index: {character_index}%
 
-    Rules for analysis:
-    1. For Vessel Score:
-       - Identify which component scores (Cost, Digitalization, Environment, Operation, Reliability) are below target
-       - Provide specific recommendations for the lowest performing components
-       - If overall score is below 75%, highlight the main contributing factors
+    Guidelines:
+    1. Write in a natural, conversational tone
+    2. Focus on key insights and actionable recommendations
+    3. Prioritize critical areas needing immediate attention
+    4. Mention any positive aspects worth maintaining
+    5. Keep it concise (2-3 sentences about current status, 2-3 sentences about recommendations)
+    6. Make connections between related metrics where relevant
+    7. Use language that a vessel manager would find relatable and actionable
 
-    2. For Crew Skill Index:
-       - Analyze which components (Capability, Competency, Collaboration, Character) are affecting the overall index
-       - Provide specific training or improvement recommendations for components below 80%
-       - Consider relationships between different crew components
-
-    3. For Hull and CII:
-       - Provide immediate action items if hull condition is not optimal
-       - Link CII rating to environmental performance recommendations
-
-    Format your response as bullet points with Status and Recommendation for each major category (Hull/CII, Vessel Score, Crew).
-    Keep each point concise but specific (1-2 lines max).
-    Focus on practical, actionable recommendations.
+    Avoid bullet points or lists - make it flow like a natural conversation.
     """
     
     try:
@@ -687,20 +680,20 @@ def get_kpi_summary(vessel_name: str, hull_condition: str, cii_rating: str,
                 collaboration_index=collaboration_index,
                 character_index=character_index
             )},
-            {"role": "user", "content": "Generate a comprehensive KPI summary with targeted recommendations."}
+            {"role": "user", "content": "Provide a conversational summary of the vessel's performance and recommendations."}
         ]
         
         response = openai.ChatCompletion.create(
             model="gpt-3.5-turbo",
             messages=messages,
-            max_tokens=500,
+            max_tokens=400,
             temperature=0.7
         )
         
         return response.choices[0].message['content'].strip()
         
     except Exception as e:
-        return f"Error generating KPI summary: {str(e)}"
+        return f"Error generating performance summary: {str(e)}"
 
 def handle_user_query(query: str):
     """
