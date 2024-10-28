@@ -102,27 +102,7 @@ def get_last_position(vessel_name: str) -> Tuple[Optional[float], Optional[float
         st.error(f"Error fetching position data: {str(e)}")
         return None, None
 
-def create_vessel_map(latitude: float, longitude: float) -> folium.Map:
-    """
-    Create a Folium map centered on the vessel's position.
-    """
-    # Create a map centered on the vessel's position
-    m = folium.Map(
-        location=[latitude, longitude],
-        zoom_start=4,
-        tiles='cartodb positron',  # Light theme map
-        scrollWheelZoom=True,
-        dragging=True
-    )
-    
-    # Add vessel marker
-    folium.Marker(
-        [latitude, longitude],
-        popup='Vessel Position',
-        icon=folium.Icon(color='red', icon='info-sign')
-    ).add_to(m)
-    
-    return m
+
 
 def show_vessel_position(vessel_name: str):
     """
@@ -132,60 +112,49 @@ def show_vessel_position(vessel_name: str):
     latitude, longitude = get_last_position(vessel_name)
     
     if latitude is not None and longitude is not None:
-        # Add custom CSS to remove extra spacing
-        st.markdown(
-            """
+        # Add CSS to control spacing
+        st.markdown("""
             <style>
-                /* Remove extra spacing from map container */
-                div[data-testid="column"] > div.element-container {
-                    margin-bottom: 0 !important;
-                }
-                
-                /* Remove spacing from metric container */
-                div.stMetric {
+                [data-testid="stMetric"] {
                     margin-bottom: 0 !important;
                     padding-bottom: 0 !important;
                 }
-                
-                /* Remove spacing from map iframe */
-                iframe {
-                    margin: 0 !important;
-                    padding: 0 !important;
-                    display: block !important;
+                [data-testid="stMetricLabel"] {
+                    padding-bottom: 0 !important;
                 }
-                
-                /* Target the specific folium element */
+                [data-testid="stMetricValue"] {
+                    padding-top: 0 !important;
+                }
                 div.stFolium {
                     margin: 0 !important;
                     padding: 0 !important;
                 }
-                
-                /* Remove any extra margins from elements inside map container */
-                div[data-testid="stExpander"] div.element-container {
+                div.stFolium > iframe {
+                    height: 300px !important;
                     margin: 0 !important;
+                    padding: 0 !important;
                 }
-                
-                /* Target the main element container */
+                div[data-testid="column"] {
+                    padding: 0 !important;
+                }
+                div[data-testid="stExpander"] {
+                    margin: 0 !important;
+                    padding: 0 !important;
+                }
                 div.element-container {
-                    margin-bottom: 0 !important;
-                }
-                
-                /* Remove padding from streamlit elements */
-                .css-1544g2n {
-                    padding: 0 !important;
-                }
-                
-                /* Ensure no extra padding on wrapper elements */
-                .css-1r6slb0 {
-                    padding: 0 !important;
                     margin: 0 !important;
+                }
+                div.block-container {
+                    padding-top: 0 !important;
+                    padding-bottom: 0 !important;
+                }
+                .main > .block-container {
+                    padding: 0 !important;
                 }
             </style>
-            """, 
-            unsafe_allow_html=True
-        )
+        """, unsafe_allow_html=True)
         
-        # Create columns for position display with minimal spacing
+        # Create columns for position display
         col1, col2 = st.columns(2)
         
         # Show coordinates
@@ -194,50 +163,49 @@ def show_vessel_position(vessel_name: str):
         with col2:
             st.metric("Longitude", f"{longitude:.4f}°")
         
-        # Create and display map with specific configuration
+        # Create and display map
         vessel_map = create_vessel_map(latitude, longitude)
         
-        # Use st_folium with minimal configuration
+        # Override folium map settings to minimize spacing
         st_folium(
-            vessel_map, 
-            height=300,  # Reduced height
+            vessel_map,
+            height=300,
             width="100%",
             returned_objects=[],
             key="vessel_map",
         )
         
-        # Add a small empty space after map (if needed)
-        st.markdown("<div style='height: 10px'></div>", unsafe_allow_html=True)
-        
     else:
         st.warning("No position data available for this vessel")
 
-# Update the create_vessel_map function to ensure clean rendering
 def create_vessel_map(latitude: float, longitude: float) -> folium.Map:
     """
-    Create a Folium map centered on the vessel's position with minimal styling.
+    Create a Folium map centered on the vessel's position.
     """
+    # Create base map with minimal margins
     m = folium.Map(
         location=[latitude, longitude],
         zoom_start=4,
         tiles='cartodb positron',
         scrollWheelZoom=True,
-        dragging=True,
-        # Add minimal margins
-        control_scale=True
+        dragging=True
     )
     
-    # Add vessel marker
+    # Add marker
     folium.Marker(
         [latitude, longitude],
         popup='Vessel Position',
         icon=folium.Icon(color='red', icon='info-sign')
     ).add_to(m)
     
-    # Set a fixed figure size to avoid extra spacing
+    # Add custom CSS to minimize map margins
     m.get_root().html.add_child(folium.Element("""
         <style>
             .folium-map {
+                margin: 0 !important;
+                padding: 0 !important;
+            }
+            .leaflet-container {
                 margin: 0 !important;
                 padding: 0 !important;
             }
@@ -245,6 +213,7 @@ def create_vessel_map(latitude: float, longitude: float) -> folium.Map:
     """))
     
     return m
+
        
 def show_vessel_synopsis(vessel_name: str):
     """
