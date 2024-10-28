@@ -378,7 +378,7 @@ def main():
     st.markdown(
         """
         <style>
-            body, .block-container, .stApp {
+            body, .block-container, .stApp, .stTextInput, .stTextArea, .css-1oe6wy4, .css-1v3fvcr, .css-6nw5cn, .stButton, .stRadio, .stSlider {
                 background-color: #132337;
                 font-family: 'Nunito', sans-serif;
                 font-size: 14px;
@@ -397,15 +397,12 @@ def main():
             .stMetric {
                 margin-bottom: 0.5rem;
             }
-            .css-1oe6wy4, .css-1v3fvcr, .css-6nw5cn {
-                background-color: #132337;
-            }
         </style>
         """, 
         unsafe_allow_html=True
     )
     """
-    Main function for the Streamlit app.
+    #Main function for the Streamlit app.
     """
     st.title("Advanced Vessel Performance Chatbot")
     st.markdown("Ask me about vessel performance, speed consumption, or request a complete vessel synopsis!")
