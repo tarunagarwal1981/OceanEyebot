@@ -110,7 +110,9 @@ def create_vessel_map(latitude: float, longitude: float) -> folium.Map:
     m = folium.Map(
         location=[latitude, longitude],
         zoom_start=4,
-        tiles='cartodb positron'  # Light theme map
+        tiles='cartodb positron',  # Light theme map
+        scrollWheelZoom=True,
+        dragging=True
     )
     
     # Add vessel marker
@@ -139,9 +141,30 @@ def show_vessel_position(vessel_name: str):
         with col2:
             st.metric("Longitude", f"{longitude:.4f}°")
         
-        # Create and display map
+        # Create and display map with specific configuration to prevent reruns
         vessel_map = create_vessel_map(latitude, longitude)
-        st_folium(vessel_map, height=400, width=700)
+        st_folium(
+            vessel_map, 
+            height=400, 
+            width="100%",
+            returned_objects=[],  # This prevents reruns on map interaction
+            key="vessel_map"  # Unique key to maintain map state
+        )
+        
+        # Remove extra spacing
+        st.markdown(
+            """
+            <style>
+                .element-container .stFolium {
+                    margin-bottom: -2rem;
+                }
+                .element-container {
+                    margin-bottom: 1rem;
+                }
+            </style>
+            """, 
+            unsafe_allow_html=True
+        )
     else:
         st.warning("No position data available for this vessel")
        
@@ -334,6 +357,27 @@ def handle_follow_up(query: str):
         show_vessel_synopsis(vessel_name)
 
 def main():
+
+    st.markdown(
+        """
+        <style>
+            .block-container {
+                padding-top: 1rem;
+                padding-bottom: 0rem;
+            }
+            .element-container {
+                margin-bottom: 1rem;
+            }
+            .stMarkdown {
+                margin-bottom: 0rem;
+            }
+            .stMetric {
+                margin-bottom: 0.5rem;
+            }
+        </style>
+        """, 
+        unsafe_allow_html=True
+    )
     """
     Main function for the Streamlit app.
     """
