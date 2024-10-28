@@ -237,15 +237,66 @@ def show_vessel_synopsis(vessel_name: str):
     else:
         st.warning("No speed consumption data available")
     
-    # Vessel Score (Placeholder)
+    # Vessel Score Section
     st.subheader("Vessel Score")
-    score_col1, score_col2, score_col3 = st.columns(3)
-    with score_col1:
-        st.metric(label="Technical Score", value="85%")
-    with score_col2:
-        st.metric(label="Operational Score", value="78%")
-    with score_col3:
-        st.metric(label="Overall Score", value="82%")
+    # Query to get the vessel score and other relevant metrics from the database
+    query = f"""
+    select
+      "Vessel Score",
+      "Cost",
+      "Digitalization",
+      "Environment",
+      "Operation",
+      "Reliability"
+    from
+      "Vessel Scorecard"
+    where
+      upper("Vessels") = '{vessel_name.upper()}';
+    """
+    try:
+        score_data = fetch_data_from_db(query)
+        if not score_data.empty:
+            vessel_score = score_data.iloc[0]['Vessel Score']
+            st.metric(label="Vessel Score", value=f"{vessel_score}%")
+            
+            # Create a small table with additional metrics
+            st.markdown(
+                f"""
+                <style>
+                table {{
+                    width: 50%;
+                    border-collapse: collapse;
+                    margin-top: 1rem;
+                }}
+                th, td {{
+                    border: 1px solid #F4F4F4;
+                    padding: 8px;
+                    text-align: left;
+                }}
+                </style>
+                <table>
+                    <tr>
+                        <th>Cost</th>
+                        <th>Digitalization</th>
+                        <th>Environment</th>
+                        <th>Operation</th>
+                        <th>Reliability</th>
+                    </tr>
+                    <tr>
+                        <td>{score_data.iloc[0]['Cost']}%</td>
+                        <td>{score_data.iloc[0]['Digitalization']}%</td>
+                        <td>{score_data.iloc[0]['Environment']}%</td>
+                        <td>{score_data.iloc[0]['Operation']}%</td>
+                        <td>{score_data.iloc[0]['Reliability']}%</td>
+                    </tr>
+                </table>
+                """,
+                unsafe_allow_html=True
+            )
+        else:
+            st.warning("No vessel score data available for this vessel")
+    except Exception as e:
+        st.error(f"Error fetching vessel score data: {str(e)}")
     
     # Crew Score (Placeholder)
     st.subheader("Crew Score")
