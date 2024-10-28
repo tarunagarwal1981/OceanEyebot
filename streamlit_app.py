@@ -1,111 +1,194 @@
 import streamlit as st
-import pandas as pd
-import numpy as np
-from sqlalchemy import create_engine, text
-import urllib.parse
-import folium
-from streamlit_folium import st_folium
-import searoute as sr
-from fuzzywuzzy import process
-from datetime import date, datetime
 import openai
 import os
+import pandas as pd
 import json
+import re
+from typing import Dict
+from agents.hull_performance_agent import analyze_hull_performance
+from agents.speed_consumption_agent import analyze_speed_consumption
+from utils.nlp_utils import clean_vessel_name
 
-# Database configuration
-DB_CONFIG = {
-    'host': 'aws-0-ap-south-1.pooler.supabase.com',
-    'database': 'postgres',
-    'user': 'postgres.conrxbcvuogbzfysomov',
-    'password': 'wXAryCC8@iwNvj#',
-    'port': '6543'
+# LLM Prompts
+DECISION_PROMPT = """
+You are an AI assistant specialized in vessel performance analysis. The user will ask a query related to vessel performance. Based on the user's query, do two things:
+1. Extract only the vessel name from the query. The vessel name may appear after the word 'of' (e.g., 'hull performance of Trammo Marycam' => 'Trammo Marycam').
+2. Determine what type of performance information is needed to answer the user's query. The options are:
+   - Hull performance
+   - Speed consumption
+   - Combined performance (both hull and speed)
+   - General vessel information
+
+Additionally:
+- If the user asks for "vessel performance" or a combination of "hull and speed performance," return "combined_performance."
+- If the user asks only about "hull performance" or "hull and propeller performance," return "hull_performance."
+- If the user asks only about "speed consumption," return "speed_consumption."
+
+Output your response as a JSON object with the following structure:
+{
+    "vessel_name": "<vessel_name>",
+    "decision": "hull_performance" or "speed_consumption" or "combined_performance" or "general_info",
+    "explanation": "Brief explanation of why you made this decision"
 }
 
-# Emission factors
-EMISSION_FACTORS = {
-    'VLSFO': 3.151,
-    'LSMGO': 3.206,
-    'LNG': 2.75
+
+# Example logic for how to handle the response:
+
+Example 1:
+Q: Can you give me the hull performance of Oceanica Explorer?
+{
+    "vessel_name": "Oceanica Explorer",
+    "decision": "hull_performance",
+    "response_type": "concise",
+    "explanation": "The query asks about hull performance and seems to expect a concise response."
 }
 
-# Vessel type mapping
-VESSEL_TYPE_MAPPING = {
-    'ASPHALT/BITUMEN TANKER': 'tanker',
-    'BULK CARRIER': 'bulk_carrier',
-    'CEMENT CARRIER': 'bulk_carrier',
-    'CHEM/PROD TANKER': 'tanker',
-    'CHEMICAL TANKER': 'tanker',
-    'Chemical/Products Tanker': 'tanker',
-    'Combination Carrier': 'combination_carrier',
-    'CONTAINER': 'container_ship',
-    'Container Ship': 'container_ship',
-    'Container/Ro-Ro Ship': 'ro_ro_cargo_ship',
-    'Crude Oil Tanker': 'tanker',
-    'Gas Carrier': 'gas_carrier',
-    'General Cargo Ship': 'general_cargo_ship',
-    'LNG CARRIER': 'lng_carrier',
-    'LPG CARRIER': 'gas_carrier',
-    'LPG Tanker': 'gas_carrier',
-    'OIL TANKER': 'tanker',
-    'Products Tanker': 'tanker',
-    'Refrigerated Cargo Ship': 'refrigerated_cargo_carrier',
-    'Ro-Ro Ship': 'ro_ro_cargo_ship',
-    'Vehicle Carrier': 'ro_ro_cargo_ship_vc'
+Example 2:
+Q: Show me the detailed performance and charts for Starlight Voyager.
+{
+    "vessel_name": "Starlight Voyager",
+    "decision": "combined_performance",
+    "response_type": "detailed",
+    "explanation": "The query specifically asks for detailed performance and charts, so a more comprehensive response is needed."
 }
 
-# CII Parameters
-CII_PARAMETERS = {
-    'bulk_carrier': [{'capacity_threshold': 279000, 'a': 4745, 'c': 0.622}],
-    'gas_carrier': [{'capacity_threshold': 65000, 'a': 144050000000, 'c': 2.071}],
-    'tanker': [{'capacity_threshold': float('inf'), 'a': 5247, 'c': 0.61}],
-    'container_ship': [{'capacity_threshold': float('inf'), 'a': 1984, 'c': 0.489}],
-    'general_cargo_ship': [{'capacity_threshold': float('inf'), 'a': 31948, 'c': 0.792}],
-    'refrigerated_cargo_carrier': [{'capacity_threshold': float('inf'), 'a': 4600, 'c': 0.557}],
-    'lng_carrier': [{'capacity_threshold': 100000, 'a': 144790000000000, 'c': 2.673}]
+Example 2:
+Q: Show me the vessel performance and charts for Starlight Voyager.
+{
+    "vessel_name": "Starlight Voyager",
+    "decision": "combined_performance",
+    "response_type": "detailed",
+    "explanation": "The query specifically asks for detailed performance and charts, so a more comprehensive response is needed."
 }
-
-# System messages for chat
-SYSTEM_MESSAGES = {
-    'general': """You are a maritime emissions expert assistant. You help analyze CII (Carbon Intensity Indicator) data 
-    and provide insights. Use the actual numbers from the context in your explanation.""",
-    'analysis': """Analyze the provided CII data and explain the current rating, comparison with required CII, 
-    key factors affecting the rating, and potential improvement areas.""",
-    'voyage': """Review the voyage plan and provide impact on annual CII rating, route efficiency analysis, 
-    and specific recommendations for improvement."""
-}
-
-# Custom CSS
-CUSTOM_CSS = """
-    <style>
-    .stApp {
-        max-width: 1200px;
-        margin: 0 auto;
-    }
-    .stButton > button {
-        background-color: #4CAF50;
-        color: white;
-    }
-    .metric-card {
-        background-color: #f8f9fa;
-        padding: 1rem;
-        border-radius: 0.5rem;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    }
-    </style>
 """
 
-# Initialize session state
-if 'messages' not in st.session_state:
-    st.session_state.messages = []
-if 'cii_data' not in st.session_state:
-    st.session_state.cii_data = {}
-if 'port_table_data' not in st.session_state:
-    st.session_state.port_table_data = []
-if 'voyage_calculations' not in st.session_state:
-    st.session_state.voyage_calculations = []
 
+# LLM Prompts and Few-Shot Examples
+FEW_SHOT_EXAMPLES = """
+Example 1:
+Q: What's the hull condition of the vessel Oceanica Explorer?
+A: The hull of Oceanica Explorer is in **average condition**, with an excess power requirement of **8.7%**, indicating moderate fouling. The next cleaning is scheduled for **2023-11-15**. 
+   Would you like a detailed analysis and charts for this vessel?
+
+Follow-up (detailed request):
+Q: Yes, give me more details.
+A: Here's a detailed analysis of the hull performance for Oceanica Explorer:
+1. **Current Excess Power**: 8.7% more power is needed to maintain the vessel's speed compared to a clean hull condition.
+2. **Fouling Rate**: Power loss is increasing at 0.5% per month, suggesting moderate fouling.
+3. **Hull Condition**: Overall, the hull condition is rated as **Average**.
+4. **Forecasted Hull Cleaning**: Scheduled for 2023-11-15.
+5. **Performance Impact**: The excess power results in approximately 6-7% increased fuel consumption, assuming normal operations.
+   
+**Charts**: Below are the performance charts for further analysis.
+*Remember: Accurate reporting is crucial for precise analysis.*
+
+Example 2:
+Q: Can you give me the hull and propeller performance of Starlight Voyager?
+A: The hull and propeller of Starlight Voyager are in **good condition**. Current excess power is only **2.5%**, indicating minimal fouling.
+   Would you like to see a detailed report and performance charts?
+
+Follow-up (detailed request):
+Q: Yes, give me the detailed report.
+A: Here's the detailed analysis of hull and propeller performance for Starlight Voyager:
+1. **Hull Condition**: Good, with minimal fouling.
+2. **Propeller Condition**: No significant performance impact observed.
+3. **Excess Power**: 2.5% above clean hull condition.
+4. **Performance Impact**: The vessel is operating efficiently, with a slight increase in fuel consumption.
+
+**Charts**: Below are the charts for detailed performance insights.
+*Accurate reporting ensures the vessel continues to perform optimally.*
+
+Example 3:
+Q: What is the hull performance of Sea Breeze?
+A: The hull performance of Sea Breeze is **average**, with around **6% excess power** required to maintain speed. The vessel's fouling rate is consistent, and a hull cleaning is recommended within the next month. 
+   Would you like a detailed analysis and charts?
+
+Follow-up (detailed request):
+Q: Yes, give me charts and more details.
+A: Here's the detailed hull performance analysis for Sea Breeze:
+1. **Current Excess Power**: 6% more power is required due to fouling.
+2. **Fouling Rate**: The fouling rate is consistent, indicating steady power loss over time.
+3. **Hull Condition**: The hull is rated as **Average**, with cleaning recommended within the next month.
+4. **Impact on Fuel Consumption**: The excess power is leading to approximately 5-6% more fuel consumption.
+
+**Charts**: Below are the performance charts for further reference.
+*Make sure to remind the crew to report data accurately for better analysis.*
+
+Example 4:
+Q: Can you provide the speed consumption profile for the vessel Starlight Voyager?
+A: I've analyzed the speed consumption data for Starlight Voyager. Here's what I found:
+
+1. Speed Range: The vessel operates between 10 to 18 knots based on the available data.
+2. Consumption Trend: There's a clear non-linear increase in fuel consumption as speed increases.
+3. Optimal Speed: The most fuel-efficient speed appears to be around 12-13 knots, where the increase in consumption per knot is lowest.
+4. High-Speed Impact: Operating at speeds above 16 knots results in a sharp increase in fuel consumption, potentially over 50% more than at optimal speed.
+5. Loading Conditions: The data shows distinct consumption profiles for laden and ballast conditions, with ballast condition generally showing lower consumption at the same speeds.
+
+Recommendations:
+1. Prioritize operating at speeds between 12-13 knots when possible to maximize fuel efficiency.
+2. For time-sensitive operations, consider the trade-off between increased speed and fuel consumption, especially above 16 knots.
+3. Optimize route planning to take advantage of the more efficient ballast condition where applicable.
+4. Monitor and record speed and consumption data regularly to identify any deviations from this profile, which could indicate performance issues.
+5. Consider conducting a detailed analysis of the economic impact of speed on your specific trade routes to find the optimal balance between speed and efficiency.
+
+**Additionally, here's the speed consumption chart for your reference.**
+
+*Please note: This analysis is as good as the data reported by the vessel. We kindly request you to remind the vessel to report data accurately and periodically. Accurate analysis not only helps reduce the vessel's carbon footprint but also realizes fuel cost savings.*
+
+Guidelines for Analysis:
+- If the user asks about vessel performance or hull performance, always include **both the speed consumption chart and hull performance chart** for reference.
+- If the hull condition is gauged as **Good**, do not recommend any hull cleaning or underwater inspection.
+- If the hull condition is **Average**, recommend performing an underwater hull inspection and propeller polishing.
+- If the hull condition is **Poor**, recommend performing hull cleaning and propeller polishing.
+- After each response, include a polite reminder: *This analysis is as good as the data reported by the vessel. We kindly request you to remind the vessel to report data accurately and periodically. Accurate analysis not only helps reduce the vessel's carbon footprint but also realizes fuel cost savings.*
+
+Now, please answer the following question in a similar style, using the data I provide:
+{user_question}
+
+{data_summary}
+
+Provide a detailed analysis and recommendations based on this data.
+"""
+
+# LLM detailed analysis function
+def get_llm_analysis(query: str, hull_analysis: str, speed_analysis: str, hull_condition: str) -> str:
+    # Prepare the vessel data summary based on hull and speed analysis
+    data_summary = f"Hull Analysis: {hull_analysis}\nSpeed Analysis: {speed_analysis}\nHull Condition: {hull_condition}"
+
+    # LLM prompt including few-shot examples
+    prompt = f"""
+    {FEW_SHOT_EXAMPLES}
+
+    User Question: {query}
+
+    Vessel Data Summary:
+    {data_summary}
+
+    Provide a detailed analysis and recommendations based on this data.
+    """
+
+    try:
+        response = openai.ChatCompletion.create(
+            model="gpt-3.5-turbo",
+            messages=[
+                {"role": "system", "content": "You are a vessel performance analysis assistant."},
+                {"role": "user", "content": prompt}
+            ],
+            max_tokens=1000,
+            temperature=0.5
+        )
+
+        return response['choices'][0]['message']['content']
+
+    except Exception as e:
+        st.error(f"Error in LLM analysis: {str(e)}")
+        return "An error occurred during the analysis."
+
+
+
+
+# Function to get the OpenAI API key
 def get_api_key():
-    """Retrieve OpenAI API key"""
     if 'openai' in st.secrets:
         return st.secrets['openai']['api_key']
     api_key = os.getenv('OPENAI_API_KEY')
@@ -113,468 +196,176 @@ def get_api_key():
         raise ValueError("API key not found. Set OPENAI_API_KEY as an environment variable.")
     return api_key
 
-def get_db_engine():
-    """Create and return database engine"""
-    encoded_password = urllib.parse.quote(DB_CONFIG['password'])
-    db_url = f"postgresql+psycopg2://{DB_CONFIG['user']}:{encoded_password}@{DB_CONFIG['host']}:{DB_CONFIG['port']}/{DB_CONFIG['database']}"
-    return create_engine(db_url)
+# Initialize OpenAI API
+openai.api_key = get_api_key()
 
-def get_vessel_data(engine, vessel_name, year):
-    """Fetch vessel data from database"""
-    query = text("""
-    SELECT 
-        t1."VESSEL_NAME" AS "Vessel",
-        t1."VESSEL_IMO" AS "IMO",
-        SUM("DISTANCE_TRAVELLED_ACTUAL") AS "total_distance",
-        COALESCE((SUM("FUEL_CONSUMPTION_HFO") - SUM("FC_FUEL_CONSUMPTION_HFO")) * 3.114, 0) + 
-        COALESCE((SUM("FUEL_CONSUMPTION_LFO") - SUM("FC_FUEL_CONSUMPTION_LFO")) * 3.151, 0) + 
-        COALESCE((SUM("FUEL_CONSUMPTION_GO_DO") - SUM("FC_FUEL_CONSUMPTION_GO_DO")) * 3.206, 0) + 
-        COALESCE((SUM("FUEL_CONSUMPTION_LNG") - SUM("FC_FUEL_CONSUMPTION_LNG")) * 2.75, 0) + 
-        COALESCE((SUM("FUEL_CONSUMPTION_LPG") - SUM("FC_FUEL_CONSUMPTION_LPG")) * 3.00, 0) + 
-        COALESCE((SUM("FUEL_CONSUMPTION_METHANOL") - SUM("FC_FUEL_CONSUMPTION_METHANOL")) * 1.375, 0) + 
-        COALESCE((SUM("FUEL_CONSUMPTION_ETHANOL") - SUM("FC_FUEL_CONSUMPTION_ETHANOL")) * 1.913, 0) AS "CO2Emission",
-        t2."deadweight" AS "capacity",
-        t2."vessel_type",
-        ROUND(CAST(SUM("DISTANCE_TRAVELLED_ACTUAL") * t2."deadweight" AS NUMERIC), 2) AS "Transportwork",
-        CASE 
-            WHEN ROUND(CAST(SUM("DISTANCE_TRAVELLED_ACTUAL") * t2."deadweight" AS NUMERIC), 2) <> 0 
-            THEN ROUND(CAST((
-                COALESCE((SUM("FUEL_CONSUMPTION_HFO") - SUM("FC_FUEL_CONSUMPTION_HFO")) * 3.114, 0) + 
-                COALESCE((SUM("FUEL_CONSUMPTION_LFO") - SUM("FC_FUEL_CONSUMPTION_LFO")) * 3.151, 0) + 
-                COALESCE((SUM("FUEL_CONSUMPTION_GO_DO") - SUM("FC_FUEL_CONSUMPTION_GO_DO")) * 3.206, 0) + 
-                COALESCE((SUM("FUEL_CONSUMPTION_LNG") - SUM("FC_FUEL_CONSUMPTION_LNG")) * 2.75, 0) + 
-                COALESCE((SUM("FUEL_CONSUMPTION_LPG") - SUM("FC_FUEL_CONSUMPTION_LPG")) * 3.00, 0) + 
-                COALESCE((SUM("FUEL_CONSUMPTION_METHANOL") - SUM("FC_FUEL_CONSUMPTION_METHANOL")) * 1.375, 0) + 
-                COALESCE((SUM("FUEL_CONSUMPTION_ETHANOL") - SUM("FC_FUEL_CONSUMPTION_ETHANOL")) * 1.913, 0)
-            ) * 1000000 / (SUM("DISTANCE_TRAVELLED_ACTUAL") * t2."deadweight") AS NUMERIC), 2)
-            ELSE NULL
-        END AS "Attained_AER"
-    FROM 
-        "sf_consumption_logs" AS t1
-    LEFT JOIN 
-        "vessel_particulars" AS t2 ON t1."VESSEL_IMO" = t2."vessel_imo"
-    WHERE 
-        t1."VESSEL_NAME" = :vessel_name
-        AND EXTRACT(YEAR FROM "REPORT_DATE") = :year
-    GROUP BY 
-        t1."VESSEL_NAME", t1."VESSEL_IMO", t2."deadweight", t2."vessel_type"
-    """)
-    
+# Fallback regex to extract vessel name in case LLM fails
+def fallback_extract_vessel_name(query: str) -> str:
+    match = re.search(r'of\s+(.+)', query, re.IGNORECASE)
+    if match:
+        return match.group(1).strip()
+    return query  # If regex fails, return the original query
+
+# Function to call ChatGPT for decision making using ChatCompletion
+def get_llm_decision(query: str) -> Dict[str, str]:
+    messages = [
+        {"role": "system", "content": DECISION_PROMPT},
+        {"role": "user", "content": query}
+    ]
     try:
-        return pd.read_sql(query, engine, params={'vessel_name': vessel_name, 'year': year})
-    except Exception as e:
-        st.error(f"Error executing SQL query: {str(e)}")
-        return pd.DataFrame()
-
-def calculate_reference_cii(capacity, ship_type):
-    """Calculate reference CII based on capacity and ship type"""
-    params = CII_PARAMETERS.get(ship_type.lower())
-    if not params:
-        raise ValueError(f"Unknown ship type: {ship_type}")
-    
-    a, c = params[0]['a'], params[0]['c']
-    return a * (capacity ** -c)
-
-def calculate_required_cii(reference_cii, year):
-    """Calculate required CII based on reference CII and year"""
-    reduction_factors = {2023: 0.95, 2024: 0.93, 2025: 0.91, 2026: 0.89}
-    return reference_cii * reduction_factors.get(year, 1.0)
-
-def calculate_cii_rating(attained_cii, required_cii):
-    """Calculate CII rating based on attained and required CII"""
-    if attained_cii <= required_cii:
-        return 'A'
-    elif attained_cii <= 1.05 * required_cii:
-        return 'B'
-    elif attained_cii <= 1.1 * required_cii:
-        return 'C'
-    elif attained_cii <= 1.15 * required_cii:
-        return 'D'
-    else:
-        return 'E'
-
-@st.cache_data
-def load_world_ports():
-    """Load and cache world ports data"""
-    return pd.read_csv("UpdatedPub150.csv")
-
-def world_port_index(port_to_match, world_ports_data):
-    """Find best matching port from world ports data"""
-    best_match = process.extractOne(port_to_match, world_ports_data['Main Port Name'])
-    return world_ports_data[world_ports_data['Main Port Name'] == best_match[0]].iloc[0]
-
-def route_distance(origin, destination, world_ports_data):
-    """Calculate route distance between two ports"""
-    try:
-        origin_port = world_port_index(origin, world_ports_data)
-        destination_port = world_port_index(destination, world_ports_data)
-        origin_coords = [float(origin_port['Longitude']), float(origin_port['Latitude'])]
-        destination_coords = [float(destination_port['Longitude']), float(destination_port['Latitude'])]
-        sea_route = sr.searoute(origin_coords, destination_coords, units="naut")
-        return int(sea_route['properties']['length'])
-    except Exception as e:
-        st.error(f"Error calculating distance between {origin} and {destination}: {str(e)}")
-        return 0
-
-def plot_route(ports, world_ports_data):
-    """Plot route on a Folium map"""
-    m = folium.Map(location=[0, 0], zoom_start=2)
-    
-    if len(ports) >= 2 and all(ports):
-        coordinates = []
-        for i in range(len(ports) - 1):
-            try:
-                start_port = world_port_index(ports[i], world_ports_data)
-                end_port = world_port_index(ports[i+1], world_ports_data)
-                start_coords = [float(start_port['Latitude']), float(start_port['Longitude'])]
-                end_coords = [float(end_port['Latitude']), float(end_port['Longitude'])]
-                
-                # Add markers for ports
-                folium.Marker(
-                    start_coords,
-                    popup=ports[i],
-                    icon=folium.Icon(color='green' if i == 0 else 'blue')
-                ).add_to(m)
-                
-                if i == len(ports) - 2:
-                    folium.Marker(
-                        end_coords,
-                        popup=ports[i+1],
-                        icon=folium.Icon(color='red')
-                    ).add_to(m)
-                
-                # Draw route line
-                route = sr.searoute(start_coords[::-1], end_coords[::-1])
-                folium.PolyLine(
-                    locations=[list(reversed(coord)) for coord in route['geometry']['coordinates']], 
-                    color="red",
-                    weight=2,
-                    opacity=0.8
-                ).add_to(m)
-                
-                coordinates.extend([start_coords, end_coords])
-            except Exception as e:
-                st.error(f"Error plotting route for {ports[i]} to {ports[i+1]}: {str(e)}")
-        
-        if coordinates:
-            m.fit_bounds(coordinates)
-    
-    return m
-
-def calculate_segment_metrics(row, world_ports_data):
-    """Calculate metrics for a single voyage segment"""
-    if not all([row[0], row[1], row[2], row[3], row[4], row[5]]):
-        return None
-    
-    try:
-        distance = route_distance(row[0], row[1], world_ports_data)
-        sea_time = distance / (row[3] * 24)
-        total_time = sea_time + row[2]
-        co2_emissions = row[4] * sea_time * EMISSION_FACTORS[row[5]]
-        
-        return {
-            'from_port': row[0],
-            'to_port': row[1],
-            'distance': distance,
-            'sea_time': sea_time,
-            'port_time': row[2],
-            'total_time': total_time,
-            'speed': row[3],
-            'fuel_used': row[4],
-            'fuel_type': row[5],
-            'co2_emissions': co2_emissions
-        }
-    except Exception as e:
-        st.error(f"Error calculating segment metrics: {str(e)}")
-        return None
-
-def handle_route_planning(world_ports_data):
-    """Handle route planning input and calculations"""
-    st.markdown("#### Route Information")
-    
-    # Create DataFrame for route information
-    port_data_df = pd.DataFrame(
-        st.session_state.port_table_data,
-        columns=["From Port", "To Port", "Port Days", "Speed (knots)", 
-                "Fuel Used (mT)", "Fuel Type"]
-    )
-    
-    # Data editor for route planning
-    edited_df = st.data_editor(
-        port_data_df,
-        num_rows="dynamic",
-        key="port_table_editor",
-        column_config={
-            "From Port": st.column_config.TextColumn(
-                "From Port",
-                help="Enter departure port name",
-                required=True
-            ),
-            "To Port": st.column_config.TextColumn(
-                "To Port",
-                help="Enter arrival port name",
-                required=True
-            ),
-            "Port Days": st.column_config.NumberColumn(
-                "Port Days",
-                help="Enter number of days in port",
-                min_value=0,
-                max_value=100,
-                step=0.5,
-                required=True
-            ),
-            "Speed (knots)": st.column_config.NumberColumn(
-                "Speed (knots)",
-                help="Enter vessel speed in knots",
-                min_value=1,
-                max_value=30,
-                step=0.1,
-                required=True
-            ),
-            "Fuel Used (mT)": st.column_config.NumberColumn(
-                "Fuel Used (mT)",
-                help="Enter total fuel consumption",
-                min_value=0,
-                step=0.1,
-                required=True
-            ),
-            "Fuel Type": st.column_config.SelectboxColumn(
-                "Fuel Type",
-                help="Select fuel type",
-                options=list(EMISSION_FACTORS.keys()),
-                required=True
-            )
-        }
-    )
-    
-    # Update session state with edited data
-    st.session_state.port_table_data = edited_df.values.tolist()
-
-def display_route_map(world_ports_data):
-    """Display route map using Folium"""
-    if len(st.session_state.port_table_data) >= 1:
-        ports = [row[0] for row in st.session_state.port_table_data if row[0]]
-        if st.session_state.port_table_data[-1][1]:  # Add last destination
-            ports.append(st.session_state.port_table_data[-1][1])
-        
-        if len(ports) >= 2:
-            m = plot_route(ports, world_ports_data)
-        else:
-            m = folium.Map(location=[0, 0], zoom_start=2)
-    else:
-        m = folium.Map(location=[0, 0], zoom_start=2)
-    
-    st_folium(m, width=None, height=400)
-
-def create_context(cii_data, voyage_calculations=None):
-    """Create context for LLM"""
-    context = {
-        'current_cii': {
-            'vessel_name': cii_data.get('vessel_name', ''),
-            'attained_aer': cii_data.get('attained_aer', 0),
-            'required_cii': cii_data.get('required_cii', 0),
-            'rating': cii_data.get('cii_rating', ''),
-            'total_distance': cii_data.get('total_distance', 0),
-            'co2_emission': cii_data.get('co2_emission', 0),
-            'vessel_type': cii_data.get('vessel_type', ''),
-            'capacity': cii_data.get('capacity', 0)
-        }
-    }
-    
-    if voyage_calculations:
-        context['planned_voyage'] = {
-            'segments': voyage_calculations,
-            'total_distance': sum(seg.get('distance', 0) for seg in voyage_calculations),
-            'total_co2': sum(seg.get('co2_emissions', 0) for seg in voyage_calculations)
-        }
-    
-    return json.dumps(context, indent=2)
-
-def get_llm_response(user_query, context, analysis_type='general'):
-    """Generate LLM response"""
-    try:
-        messages = [
-            {"role": "system", "content": SYSTEM_MESSAGES[analysis_type]},
-            {"role": "user", "content": f"""
-Context:
-{context}
-
-User Question: {user_query}
-
-Provide a clear, concise response based on the above context."""}
-        ]
-        
         response = openai.ChatCompletion.create(
-            model="gpt-4",
+            model="gpt-3.5-turbo",
             messages=messages,
-            temperature=0.7,
-            max_tokens=500
+            max_tokens=200,
+            temperature=0.3
         )
+        decision_text = response.choices[0].message['content'].strip()
+        #st.write(f"LLM Response: {decision_text}")  # Debugging output
         
-        return response.choices[0].message["content"]
+        decision_data = json.loads(decision_text)
+        
+        # Fallback if the vessel name is not correctly extracted
+        if "vessel_name" not in decision_data or decision_data['vessel_name'] is None or 'hull performance' in decision_data['vessel_name'].lower():
+            decision_data['vessel_name'] = fallback_extract_vessel_name(query)
+        
+        return decision_data
+    except openai.error.InvalidRequestError as e:
+        st.error(f"InvalidRequestError: {str(e)}")
+        return {
+            "vessel_name": fallback_extract_vessel_name(query),
+            "decision": "general_info",
+            "explanation": "Invalid request. Defaulting to general info."
+        }
     except Exception as e:
-        return f"Error generating response: {str(e)}"
+        st.error(f"Error in LLM decision: {str(e)}")
+        return {
+            "vessel_name": fallback_extract_vessel_name(query),
+            "decision": "general_info",
+            "explanation": "An error occurred. Defaulting to general info."
+        }
 
-def analyze_query(query):
-    """Determine the type of analysis needed"""
-    query_lower = query.lower()
-    if any(word in query_lower for word in ['voyage', 'route', 'plan', 'distance']):
-        return 'voyage'
-    elif any(word in query_lower for word in ['analyze', 'analysis', 'explain', 'why', 'how']):
-        return 'analysis'
-    return 'general'
+# Function to handle user query and return analysis
+def handle_user_query(query: str):
+    # Get the decision and vessel name from the LLM (ChatGPT)
+    llm_decision = get_llm_decision(query)
 
-def display_cii_results():
-    """Display CII calculation results"""
-    st.markdown("### Current CII Metrics")
-    col1, col2, col3, col4, col5 = st.columns(5)
-    with col1:
-        st.metric('Attained AER', 
-                 f"{st.session_state.cii_data['attained_aer']:.4f}")
-    with col2:
-        st.metric('Required CII', 
-                 f"{st.session_state.cii_data['required_cii']:.4f}")
-    with col3:
-        st.metric('CII Rating', 
-                 st.session_state.cii_data['cii_rating'])
-    with col4:
-        st.metric('Total Distance (NM)', 
-                 f"{st.session_state.cii_data['total_distance']:,.0f}")
-    with col5:
-        st.metric('CO2 Emission (MT)', 
-                 f"{st.session_state.cii_data['co2_emission']:,.1f}")
+    # Safeguard: Ensure the response contains vessel_name and decision
+    vessel_name = llm_decision.get("vessel_name", "")
+    answer_type = llm_decision.get("answer_type", "concise")
+    decision_type = llm_decision.get("decision", "general_info")
 
-def run_calculator():
-    """Run the CII calculator interface"""
-    st.title('🚢 CII Calculator')
-    
-    # Load world ports data
-    world_ports_data = load_world_ports()
+    # Check if the vessel name was extracted correctly
+    if not vessel_name:
+        return "I couldn't identify a vessel name in your query."
 
-    # User inputs
-    col1, col2, col3 = st.columns(3)
-    with col1:
-        vessel_name = st.text_input("Enter Vessel Name")
-    with col2:
-        year = st.number_input('Year for CII Calculation', 
-                              min_value=2023, 
-                              max_value=date.today().year, 
-                              value=date.today().year)
-    with col3:
-        calculate_clicked = st.button('Calculate Current CII')
+    # Store the vessel name and decision type in session state for follow-up queries
+    st.session_state.vessel_name = vessel_name
+    st.session_state.decision_type = decision_type
 
-    if calculate_clicked and vessel_name:
-        engine = get_db_engine()
-        df = get_vessel_data(engine, vessel_name, year)
-        
-        if not df.empty:
-            vessel_type = df['vessel_type'].iloc[0]
-            imo_ship_type = VESSEL_TYPE_MAPPING.get(vessel_type)
-            capacity = df['capacity'].iloc[0]
-            attained_aer = df['Attained_AER'].iloc[0]
+    # Now based on the answer_type (concise/detailed), respond accordingly
+    if answer_type == "concise":
+        if decision_type == 'hull_performance':
+            hull_analysis, power_loss_pct, hull_condition, _ = analyze_hull_performance(vessel_name)
+            analysis = f"The hull of {vessel_name} is in {hull_condition} condition with {power_loss_pct:.2f}% power loss. Would you like more details or charts?"
 
-            if imo_ship_type and attained_aer is not None:
-                reference_cii = calculate_reference_cii(capacity, imo_ship_type)
-                required_cii = calculate_required_cii(reference_cii, year)
-                cii_rating = calculate_cii_rating(attained_aer, required_cii)
-                
-                st.session_state.cii_data = {
-                    'vessel_name': df['Vessel'].iloc[0],
-                    'attained_aer': attained_aer,
-                    'required_cii': required_cii,
-                    'cii_rating': cii_rating,
-                    'total_distance': df['total_distance'].iloc[0],
-                    'co2_emission': df['CO2Emission'].iloc[0],
-                    'capacity': capacity,
-                    'vessel_type': vessel_type,
-                    'imo_ship_type': imo_ship_type
-                }
-            else:
-                if imo_ship_type is None:
-                    st.error(f"The vessel type '{vessel_type}' is not supported for CII calculations.")
-                if attained_aer is None:
-                    st.error("Unable to calculate Attained AER. Please check the vessel's data.")
+        elif decision_type == 'speed_consumption':
+            speed_analysis, _ = analyze_speed_consumption(vessel_name)
+            analysis = f"The speed consumption of {vessel_name} shows a clear trend. Would you like more details or charts?"
+
+        elif decision_type == 'combined_performance':
+            hull_analysis, _, hull_condition, _ = analyze_hull_performance(vessel_name)
+            speed_analysis, _ = analyze_speed_consumption(vessel_name)
+            analysis = f"Both hull and speed data for {vessel_name} indicate good performance. Would you like a detailed report or charts?"
+
         else:
-            st.error(f"No data found for vessel {vessel_name} in year {year}")
+            analysis = "The query seems to require general vessel information or is unclear. Please refine the query."
 
-    # Display current CII results if available
-    if st.session_state.cii_data:
-        display_cii_results()
+    elif answer_type == "detailed":
+        # Handle detailed requests
+        handle_more_information()  # Provide detailed analysis and charts if requested
+    
+    return analysis
 
-    # Voyage Planning Section
-    st.markdown("### Voyage Planning")
-    left_col, right_col = st.columns([6, 4])
-    
-    with left_col:
-        handle_route_planning(world_ports_data)
-    
-    with right_col:
-        display_route_map(world_ports_data)
 
-def run_chat_interface():
-    """Run the chat interface"""
-    st.markdown("### CII Analysis Assistant")
+# Function to handle follow-up queries asking for more information
+def handle_more_information():
+    # Check if vessel name and decision type are in session state
+    if 'vessel_name' in st.session_state and 'decision_type' in st.session_state:
+        vessel_name = st.session_state.vessel_name
+        decision_type = st.session_state.decision_type
+
+        # Based on the stored decision type, provide the detailed response
+        if decision_type == 'hull_performance':
+            hull_analysis, power_loss_pct, hull_condition, hull_chart = analyze_hull_performance(vessel_name)
+            detailed_analysis = get_llm_analysis(f"Hull performance of {vessel_name}", hull_analysis, "", hull_condition)
+            st.pyplot(hull_chart)
+
+        elif decision_type == 'speed_consumption':
+            speed_analysis, speed_chart = analyze_speed_consumption(vessel_name)
+            detailed_analysis = get_llm_analysis(f"Speed consumption of {vessel_name}", "", speed_analysis, "")
+            st.pyplot(speed_chart)
+
+        elif decision_type == 'combined_performance':
+            hull_analysis, _, hull_condition, hull_chart = analyze_hull_performance(vessel_name)
+            speed_analysis, speed_chart = analyze_speed_consumption(vessel_name)
+            detailed_analysis = get_llm_analysis(f"Combined performance of {vessel_name}", hull_analysis, speed_analysis, hull_condition)
+            st.pyplot(hull_chart)
+            st.pyplot(speed_chart)
+        
+        st.write(detailed_analysis)
+    else:
+        st.warning("No previous context found. Please provide a new query.")
+
+# Function to display the charts based on the LLM's decision
+def display_charts(decision: str, vessel_name: str):
+    if decision in ["speed_consumption", "combined_performance"]:
+        try:
+            speed_analysis, speed_chart = analyze_speed_consumption(vessel_name)
+            if speed_chart is not None and hasattr(speed_chart, 'savefig'):
+                st.pyplot(speed_chart)
+            else:
+                st.warning("Speed consumption chart is not available for this vessel.")
+        except Exception as e:
+            st.error(f"An error occurred while generating the speed consumption chart: {str(e)}")
     
-    if not st.session_state.get('cii_data'):
-        st.info("Please calculate CII data first in the Calculator tab.")
-        return
-    
-    # Display chat messages
+    if decision in ["hull_performance", "combined_performance"]:
+        try:
+            # Unpack the returned values from the hull performance agent
+            hull_analysis, _, _, hull_chart = analyze_hull_performance(vessel_name)
+            if hull_chart is not None and hasattr(hull_chart, 'savefig'):
+                st.pyplot(hull_chart)
+            else:
+                st.warning("Hull performance chart is not available for this vessel.")
+        except Exception as e:
+            st.error(f"An error occurred while generating the hull performance chart: {str(e)}")
+
+
+# Main function for the Streamlit app
+def main():
+    st.title("Advanced Vessel Performance Chatbot (Powered by ChatGPT)")
+
+    if 'messages' not in st.session_state:
+        st.session_state.messages = []
+
     for message in st.session_state.messages:
         with st.chat_message(message["role"]):
             st.markdown(message["content"])
 
-    # Chat input
-    if prompt := st.chat_input("Ask about your CII analysis..."):
-        st.session_state.messages.append({"role": "user", "content": prompt})
-        with st.chat_message("user"):
+    if prompt := st.chat_input("What would you like to know about vessel performance?"):
+        st.session_state.messages.append({"role": "human", "content": prompt})
+        with st.chat_message("human"):
             st.markdown(prompt)
 
-        # Determine analysis type and create context
-        analysis_type = analyze_query(prompt)
-        context = create_context(
-            st.session_state.cii_data,
-            st.session_state.get('voyage_calculations', None)
-        )
+        # Check if it's a follow-up request like "show charts" or "give me more information"
+        if re.search(r"(more information|give me charts|detailed|yes)", prompt, re.IGNORECASE):
+            handle_more_information()
+        else:
+            # Handle initial query
+            analysis = handle_user_query(prompt)
+            st.session_state.messages.append({"role": "assistant", "content": analysis})
+            with st.chat_message("assistant"):
+                st.markdown(analysis)
 
-        # Get and display response
-        with st.chat_message("assistant"):
-            response = get_llm_response(prompt, context, analysis_type)
-            st.markdown(response)
-            st.session_state.messages.append({"role": "assistant", "content": response})
-
-    # Export chat button
-    if len(st.session_state.messages) > 1:
-        if st.button("Export Chat History"):
-            chat_history = {
-                'timestamp': datetime.now().isoformat(),
-                'vessel_name': st.session_state.cii_data.get('vessel_name', 'Unknown'),
-                'messages': st.session_state.messages
-            }
-            st.download_button(
-                "Download Chat History",
-                json.dumps(chat_history, indent=2),
-                file_name=f"cii_chat_{datetime.now().strftime('%Y%m%d_%H%M')}.json",
-                mime="application/json"
-            )
-
-def main():
-    """Main application entry point"""
-    # Page config
-    st.set_page_config(page_title="CII Calculator", layout="wide", page_icon="🚢")
-    st.markdown(CUSTOM_CSS, unsafe_allow_html=True)
-    
-    # Initialize OpenAI
-    openai.api_key = get_api_key()
-    
-    # Create tabs
-    tab1, tab2 = st.tabs(["CII Calculator", "Chat Assistant"])
-    
-    with tab1:
-        run_calculator()
-    
-    with tab2:
-        run_chat_interface()
-
+# Run the app
 if __name__ == "__main__":
     main()
