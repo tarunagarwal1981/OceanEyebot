@@ -378,24 +378,86 @@ def main():
     st.markdown(
         """
         <style>
-            body, .block-container, .stApp, .stTextInput, .stTextArea, .css-1oe6wy4, .css-1v3fvcr, .css-6nw5cn, .stButton, .stRadio, .stSlider {
+            /* Main background and text */
+            body, .block-container, .stApp, .stTextInput, .stTextArea, 
+            .css-1oe6wy4, .css-1v3fvcr, .css-6nw5cn, .stButton, .stRadio, .stSlider {
                 background-color: #132337;
                 font-family: 'Nunito', sans-serif;
                 font-size: 14px;
                 color: #F4F4F4;
             }
+
+            /* Top bar styling */
+            header[data-testid="stHeader"] {
+                background-color: #132337;
+                border-bottom: 1px solid #1f3753;
+            }
+
+            /* Chat input area styling */
+            .stChatInputContainer {
+                background-color: #132337 !important;
+            }
+            
+            .stChatInput {
+                background-color: #1f3753 !important;
+                border-color: #2d4b6d !important;
+                color: white !important;
+            }
+
+            /* Chat input placeholder */
+            .stChatInput::placeholder {
+                color: #a3b8cc !important;
+            }
+
+            /* Submit button in chat */
+            .stChatInput > button {
+                background-color: #2d4b6d !important;
+                border-color: #2d4b6d !important;
+            }
+
+            /* Scrollbar styling */
+            ::-webkit-scrollbar {
+                width: 10px;
+                background-color: #132337;
+            }
+
+            ::-webkit-scrollbar-thumb {
+                background-color: #2d4b6d;
+                border-radius: 5px;
+            }
+
+            /* Container spacing */
             .block-container {
                 padding-top: 1rem;
                 padding-bottom: 0rem;
             }
+
             .element-container {
                 margin-bottom: 1rem;
             }
+
             .stMarkdown {
                 margin-bottom: 0rem;
             }
+
             .stMetric {
                 margin-bottom: 0.5rem;
+            }
+
+            /* Toolbar icons */
+            [data-testid="stToolbar"] {
+                background-color: #132337;
+            }
+            
+            .stActionButton {
+                color: #F4F4F4 !important;
+            }
+
+            /* Additional elements */
+            .css-1y4p8pa {
+                width: 100%;
+                padding: 6rem 1rem 1rem;
+                max-width: 46rem;
             }
         </style>
         """, 
