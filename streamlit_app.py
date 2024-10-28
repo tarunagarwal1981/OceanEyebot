@@ -392,9 +392,7 @@ def main():
         unsafe_allow_html=True
     )
     
-    """
-    Main function for the Streamlit app.
-    """
+    
     st.title("Advanced Vessel Performance Chatbot")
     st.markdown("Ask me about vessel performance, speed consumption, or request a complete vessel synopsis!")
     
