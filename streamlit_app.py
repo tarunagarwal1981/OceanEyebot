@@ -523,44 +523,56 @@ def get_kpi_summary(vessel_name: str, hull_condition: str, cii_rating: str,
                     crew_skill_index: float, capability_index: float, competency_index: float,
                     collaboration_index: float, character_index: float) -> str:
     """
-    Get specific, actionable KPI analysis with color-coded indicators.
+    Get comprehensive KPI analysis including hull condition, vessel score, and crew performance.
     """
     SUMMARY_PROMPT = """
-    You are a vessel performance analyst providing specific insights about a vessel's performance metrics. 
-    Create a brief, conversational summary within 3-4 sentences with specific, actionable recommendations.
-    
+    You are a vessel performance analyst providing insights about vessel metrics. Create a comprehensive but concise summary
+    addressing all major performance areas: hull condition, vessel performance scores, and crew performance.
+
     Rules for summary:
+    1. ALWAYS start with hull condition and its implications
+    2. Then discuss the vessel score and its components
+    3. Finally address crew performance
+    4. Keep total length to 4-5 sentences maximum
+    5. Prioritize the most critical issues needing immediate attention
+    6. For each major issue, provide specific, time-bound recommendation
+
+    Formatting rules:
     1. Start with "Based on the data of [vessel name]"
-    2. Highlight metrics using span tags with proper color classes:
-       - Use <span class="status-poor">[value]</span>% for values below 60
-       - Use <span class="status-average">[value]</span>% for values between 60-75
-       - Use <span class="status-good">[value]</span>% for values above 75
-    3. Format conditions/ratings:
-       - Use <span class="status-poor">poor</span> for poor conditions
-       - Use <span class="status-average">average</span> for average conditions
-       - Use <span class="status-good">good</span> for good conditions
-    4. Always include:
-       - Key underperforming metrics
-       - Specific recommendations with timelines
-       - Most critical areas requiring immediate attention
-    5. Format numbers to 1 decimal place
-    6. Include % symbol after the span tag for metrics
+    2. Format hull condition as:
+       - <span class="status-poor">poor</span> for poor condition
+       - <span class="status-average">average</span> for average condition
+       - <span class="status-good">good</span> for good condition
+    3. Format numeric values as:
+       - <span class="status-poor">[value]</span>% for values below 60
+       - <span class="status-average">[value]</span>% for values 60-75
+       - <span class="status-good">[value]</span>% for values above 75
+    4. Always include % symbol after the closing span tag for metrics
 
     Current Data:
-    - Vessel Name: {vessel_name}
+    Hull Performance:
     - Hull Condition: {hull_condition}
     - CII Rating: {cii_rating}
+
+    Vessel Scores (Target >65%):
     - Overall Score: {vessel_score:.1f}%
     - Cost: {cost_score:.1f}%
     - Operation: {operation_score:.1f}%
     - Environment: {environment_score:.1f}%
     - Reliability: {reliability_score:.1f}%
     - Digitalization: {digitalization_score:.1f}%
-    - Crew Skill: {crew_skill_index:.1f}%
-    - Crew Competency: {competency_index:.1f}%
-    
-    Example:
-    "Based on the data of Example Vessel, overall performance is <span class="status-poor">poor</span> with vessel score at <span class="status-poor">55.4</span>%. The operation score is at <span class="status-poor">45.6</span>% requiring immediate attention."
+
+    Crew Performance (Target >65%):
+    - Overall Crew Skill: {crew_skill_index:.1f}%
+    - Capability: {capability_index:.1f}%
+    - Competency: {competency_index:.1f}%
+    - Collaboration: {collaboration_index:.1f}%
+    - Character: {character_index:.1f}%
+
+    Example format:
+    "Based on the data of Example Vessel, the hull condition is <span class="status-poor">poor</span> requiring immediate cleaning due to 25% power loss. The vessel's overall performance score is at <span class="status-poor">55.4</span>%, primarily affected by operation score at <span class="status-poor">45.6</span>% and cost efficiency at <span class="status-average">65.5</span>%. Crew performance shows <span class="status-poor">poor</span> competency at <span class="status-poor">58.4</span>%. Recommend scheduling hull cleaning within next 15 days, implementing fuel optimization program, and conducting crew technical training by end of month."
+
+    Provide actionable insights focusing on the most critical areas requiring immediate attention.
     """
     
     try:
@@ -581,7 +593,7 @@ def get_kpi_summary(vessel_name: str, hull_condition: str, cii_rating: str,
                 collaboration_index=collaboration_index,
                 character_index=character_index
             )},
-            {"role": "user", "content": "Generate a concise performance summary highlighting critical areas and specific recommendations."}
+            {"role": "user", "content": "Generate a comprehensive performance summary prioritizing hull condition and highlighting critical areas across all KPIs."}
         ]
         
         response = openai.ChatCompletion.create(
