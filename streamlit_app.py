@@ -10,6 +10,7 @@ from agents.speed_consumption_agent import analyze_speed_consumption
 from utils.nlp_utils import clean_vessel_name
 import folium
 from streamlit_folium import st_folium
+from utils.database_utils import fetch_data_from_db 
 
 # LLM Prompts
 DECISION_PROMPT = """
