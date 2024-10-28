@@ -317,14 +317,6 @@ def show_vessel_synopsis(vessel_name: str):
     
     # Crew Score (Placeholder)
     st.subheader("Crew Score")
-    crew_col1, crew_col2 = st.columns(2)
-    with crew_col1:
-        st.metric(label="Reporting Quality", value="92%")
-    with crew_col2:
-        st.metric(label="Response Time", value="88%")
-    
-    # New Crew Skill Index Section
-    st.markdown("#### Crew Skill Index")
     
     # Query to get crew skill indices
     crew_query = """
@@ -345,7 +337,14 @@ def show_vessel_synopsis(vessel_name: str):
     try:
         crew_data = fetch_data_from_db(crew_query)
         if not crew_data.empty:
-            # Create a table with the crew indices
+            # Display Crew Skill Index as metric
+            st.markdown("#### Crew Skill Index")
+            st.metric(
+                label="",  # Empty label since we already have the heading
+                value=f"{crew_data.iloc[0]['Crew Skill Index']:.1f}%"
+            )
+            
+            # Create a table with the remaining indices
             st.markdown(
                 f"""
                 <style>
@@ -370,24 +369,20 @@ def show_vessel_synopsis(vessel_name: str):
                         <th>Score</th>
                     </tr>
                     <tr>
-                        <td>Crew Skill Index</td>
-                        <td>{crew_data.iloc[0]['Crew Skill Index']}%</td>
-                    </tr>
-                    <tr>
                         <td>Capability Index</td>
-                        <td>{crew_data.iloc[0]['Capability Index']}%</td>
+                        <td>{crew_data.iloc[0]['Capability Index']:.1f}%</td>
                     </tr>
                     <tr>
                         <td>Competency Index</td>
-                        <td>{crew_data.iloc[0]['Competency Index']}%</td>
+                        <td>{crew_data.iloc[0]['Competency Index']:.1f}%</td>
                     </tr>
                     <tr>
                         <td>Collaboration Index</td>
-                        <td>{crew_data.iloc[0]['Collaboration Index']}%</td>
+                        <td>{crew_data.iloc[0]['Collaboration Index']:.1f}%</td>
                     </tr>
                     <tr>
                         <td>Character Index</td>
-                        <td>{crew_data.iloc[0]['Character Index']}%</td>
+                        <td>{crew_data.iloc[0]['Character Index']:.1f}%</td>
                     </tr>
                 </table>
                 """,
