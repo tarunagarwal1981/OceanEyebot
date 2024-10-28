@@ -523,22 +523,25 @@ def get_kpi_summary(vessel_name: str, hull_condition: str, cii_rating: str,
                     crew_skill_index: float, capability_index: float, competency_index: float,
                     collaboration_index: float, character_index: float) -> str:
     """
-    Get comprehensive KPI analysis including hull condition, vessel score, and crew performance.
+    Get comprehensive KPI analysis with proper vessel name inclusion.
     """
-    SUMMARY_PROMPT = """
+    SUMMARY_PROMPT = f"""
     You are a vessel performance analyst providing insights about vessel metrics. Create a comprehensive but concise summary
     addressing all major performance areas: hull condition, vessel performance scores, and crew performance.
 
+    Important: The vessel name is "{vessel_name}" - use this exact name in your summary.
+
     Rules for summary:
-    1. ALWAYS start with hull condition and its implications
-    2. Then discuss the vessel score and its components
-    3. Finally address crew performance
-    4. Keep total length to 4-5 sentences maximum
-    5. Prioritize the most critical issues needing immediate attention
-    6. For each major issue, provide specific, time-bound recommendation
+    1. ALWAYS start with exactly: "Based on the data of {vessel_name},"
+    2. Then discuss hull condition and its implications
+    3. Then discuss the vessel score and its components
+    4. Finally address crew performance
+    5. Keep total length to 4-5 sentences maximum
+    6. Prioritize the most critical issues needing immediate attention
+    7. For each major issue, provide specific, time-bound recommendation
 
     Formatting rules:
-    1. Start with "Based on the data of [vessel name]"
+    1. Use the exact vessel name provided above - do not use placeholders
     2. Format hull condition as:
        - <span class="status-poor">poor</span> for poor condition
        - <span class="status-average">average</span> for average condition
@@ -549,12 +552,12 @@ def get_kpi_summary(vessel_name: str, hull_condition: str, cii_rating: str,
        - <span class="status-good">[value]</span>% for values above 75
     4. Always include % symbol after the closing span tag for metrics
 
-    Current Data:
+    Current Data for {vessel_name}:
     Hull Performance:
     - Hull Condition: {hull_condition}
     - CII Rating: {cii_rating}
 
-    Vessel Scores (Target >65%):
+    Vessel Scores (Target >75%):
     - Overall Score: {vessel_score:.1f}%
     - Cost: {cost_score:.1f}%
     - Operation: {operation_score:.1f}%
@@ -562,7 +565,7 @@ def get_kpi_summary(vessel_name: str, hull_condition: str, cii_rating: str,
     - Reliability: {reliability_score:.1f}%
     - Digitalization: {digitalization_score:.1f}%
 
-    Crew Performance (Target >65%):
+    Crew Performance (Target >80%):
     - Overall Crew Skill: {crew_skill_index:.1f}%
     - Capability: {capability_index:.1f}%
     - Competency: {competency_index:.1f}%
@@ -570,30 +573,15 @@ def get_kpi_summary(vessel_name: str, hull_condition: str, cii_rating: str,
     - Character: {character_index:.1f}%
 
     Example format:
-    "Based on the data of Example Vessel, the hull condition is <span class="status-poor">poor</span> requiring immediate cleaning due to 25% power loss. The vessel's overall performance score is at <span class="status-poor">55.4</span>%, primarily affected by operation score at <span class="status-poor">45.6</span>% and cost efficiency at <span class="status-average">65.5</span>%. Crew performance shows <span class="status-poor">poor</span> competency at <span class="status-poor">58.4</span>%. Recommend scheduling hull cleaning within next 15 days, implementing fuel optimization program, and conducting crew technical training by end of month."
+    "Based on the data of {vessel_name}, the hull condition is <span class="status-poor">poor</span> requiring immediate cleaning due to 15% power loss. The vessel's overall performance score is at <span class="status-poor">55.4</span>%, primarily affected by operation score at <span class="status-poor">45.6</span>% and cost efficiency at <span class="status-average">65.5</span>%. Crew performance shows <span class="status-poor">poor</span> competency at <span class="status-poor">58.4</span>%. Recommend scheduling hull cleaning within next 15 days, implementing fuel optimization program, and conducting crew technical training by end of month."
 
     Provide actionable insights focusing on the most critical areas requiring immediate attention.
     """
     
     try:
         messages = [
-            {"role": "system", "content": SUMMARY_PROMPT.format(
-                vessel_name=vessel_name,
-                hull_condition=hull_condition,
-                cii_rating=cii_rating,
-                vessel_score=vessel_score,
-                cost_score=cost_score,
-                digitalization_score=digitalization_score,
-                environment_score=environment_score,
-                operation_score=operation_score,
-                reliability_score=reliability_score,
-                crew_skill_index=crew_skill_index,
-                capability_index=capability_index,
-                competency_index=competency_index,
-                collaboration_index=collaboration_index,
-                character_index=character_index
-            )},
-            {"role": "user", "content": "Generate a comprehensive performance summary prioritizing hull condition and highlighting critical areas across all KPIs."}
+            {"role": "system", "content": SUMMARY_PROMPT},
+            {"role": "user", "content": f"Generate a comprehensive performance summary for vessel {vessel_name} prioritizing hull condition and highlighting critical areas across all KPIs."}
         ]
         
         response = openai.ChatCompletion.create(
@@ -603,7 +591,12 @@ def get_kpi_summary(vessel_name: str, hull_condition: str, cii_rating: str,
             temperature=0.7
         )
         
-        return response.choices[0].message['content'].strip()
+        # Verify vessel name is present
+        summary = response.choices[0].message['content'].strip()
+        if not summary.startswith(f"Based on the data of {vessel_name}"):
+            summary = f"Based on the data of {vessel_name}, " + summary
+            
+        return summary
         
     except Exception as e:
         return f"Error generating performance summary: {str(e)}"
