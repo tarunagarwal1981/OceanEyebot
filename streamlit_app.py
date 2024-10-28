@@ -132,7 +132,60 @@ def show_vessel_position(vessel_name: str):
     latitude, longitude = get_last_position(vessel_name)
     
     if latitude is not None and longitude is not None:
-        # Create columns for position display
+        # Add custom CSS to remove extra spacing
+        st.markdown(
+            """
+            <style>
+                /* Remove extra spacing from map container */
+                div[data-testid="column"] > div.element-container {
+                    margin-bottom: 0 !important;
+                }
+                
+                /* Remove spacing from metric container */
+                div.stMetric {
+                    margin-bottom: 0 !important;
+                    padding-bottom: 0 !important;
+                }
+                
+                /* Remove spacing from map iframe */
+                iframe {
+                    margin: 0 !important;
+                    padding: 0 !important;
+                    display: block !important;
+                }
+                
+                /* Target the specific folium element */
+                div.stFolium {
+                    margin: 0 !important;
+                    padding: 0 !important;
+                }
+                
+                /* Remove any extra margins from elements inside map container */
+                div[data-testid="stExpander"] div.element-container {
+                    margin: 0 !important;
+                }
+                
+                /* Target the main element container */
+                div.element-container {
+                    margin-bottom: 0 !important;
+                }
+                
+                /* Remove padding from streamlit elements */
+                .css-1544g2n {
+                    padding: 0 !important;
+                }
+                
+                /* Ensure no extra padding on wrapper elements */
+                .css-1r6slb0 {
+                    padding: 0 !important;
+                    margin: 0 !important;
+                }
+            </style>
+            """, 
+            unsafe_allow_html=True
+        )
+        
+        # Create columns for position display with minimal spacing
         col1, col2 = st.columns(2)
         
         # Show coordinates
@@ -144,49 +197,54 @@ def show_vessel_position(vessel_name: str):
         # Create and display map with specific configuration
         vessel_map = create_vessel_map(latitude, longitude)
         
-        # Add custom CSS to remove extra spacing
-        st.markdown(
-            """
-            <style>
-                /* Remove extra padding from metric widgets */
-                div.stMetric {
-                    margin-bottom: 0 !important;
-                    padding-bottom: 0 !important;
-                }
-                
-                /* Remove spacing from map container */
-                iframe {
-                    margin-bottom: 0 !important;
-                    padding-bottom: 0 !important;
-                }
-                
-                /* Adjust spacing for the folium map container */
-                div.stFolium {
-                    margin-bottom: 0 !important;
-                    padding-bottom: 0 !important;
-                }
-                
-                /* Remove extra padding from elements */
-                div.element-container {
-                    margin-bottom: 0 !important;
-                    padding-bottom: 0 !important;
-                }
-            </style>
-            """, 
-            unsafe_allow_html=True
-        )
-        
-        # Display map with minimal height
+        # Use st_folium with minimal configuration
         st_folium(
             vessel_map, 
             height=300,  # Reduced height
             width="100%",
             returned_objects=[],
-            key="vessel_map"
+            key="vessel_map",
         )
+        
+        # Add a small empty space after map (if needed)
+        st.markdown("<div style='height: 10px'></div>", unsafe_allow_html=True)
         
     else:
         st.warning("No position data available for this vessel")
+
+# Update the create_vessel_map function to ensure clean rendering
+def create_vessel_map(latitude: float, longitude: float) -> folium.Map:
+    """
+    Create a Folium map centered on the vessel's position with minimal styling.
+    """
+    m = folium.Map(
+        location=[latitude, longitude],
+        zoom_start=4,
+        tiles='cartodb positron',
+        scrollWheelZoom=True,
+        dragging=True,
+        # Add minimal margins
+        control_scale=True
+    )
+    
+    # Add vessel marker
+    folium.Marker(
+        [latitude, longitude],
+        popup='Vessel Position',
+        icon=folium.Icon(color='red', icon='info-sign')
+    ).add_to(m)
+    
+    # Set a fixed figure size to avoid extra spacing
+    m.get_root().html.add_child(folium.Element("""
+        <style>
+            .folium-map {
+                margin: 0 !important;
+                padding: 0 !important;
+            }
+        </style>
+    """))
+    
+    return m
        
 def show_vessel_synopsis(vessel_name: str):
     """
