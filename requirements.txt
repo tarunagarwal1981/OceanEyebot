@@ -1,10 +1,9 @@
 streamlit
-openai==0.28
+matplotlib
 pandas
 numpy
+openai == 0.28
+scipy
+anthropic
 sqlalchemy
-folium
-streamlit-folium
-searoute
-fuzzywuzzy
-python-Levenshtein
+psycopg2-binary
