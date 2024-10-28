@@ -115,15 +115,25 @@ def show_vessel_position(vessel_name: str):
         # Add CSS to control spacing
         st.markdown("""
             <style>
+                /* Control metric widget spacing */
                 [data-testid="stMetric"] {
-                    margin-bottom: 0 !important;
-                    padding-bottom: 0 !important;
+                    margin: 0 !important;
+                    padding: 0 !important;
+                    line-height: 1 !important;
                 }
                 [data-testid="stMetricLabel"] {
-                    padding-bottom: 0 !important;
+                    margin: 0 !important;
+                    padding: 0 !important;
                 }
                 [data-testid="stMetricValue"] {
-                    padding-top: 0 !important;
+                    margin: 0 !important;
+                    padding: 0 !important;
+                }
+                
+                /* Control map container spacing */
+                .element-container {
+                    margin: 0 !important;
+                    padding: 0 !important;
                 }
                 div.stFolium {
                     margin: 0 !important;
@@ -133,23 +143,33 @@ def show_vessel_position(vessel_name: str):
                     height: 300px !important;
                     margin: 0 !important;
                     padding: 0 !important;
+                    display: block !important;
                 }
-                div[data-testid="column"] {
+                
+                /* Control column spacing */
+                [data-testid="column"] {
                     padding: 0 !important;
+                    margin: 0 !important;
                 }
-                div[data-testid="stExpander"] {
+                
+                /* Control expander spacing */
+                [data-testid="stExpander"] {
                     margin: 0 !important;
                     padding: 0 !important;
                 }
-                div.element-container {
+                
+                /* Remove any potential wrapper padding */
+                .stMarkdown {
                     margin: 0 !important;
+                    padding: 0 !important;
                 }
-                div.block-container {
+                .block-container {
                     padding-top: 0 !important;
                     padding-bottom: 0 !important;
+                    margin-bottom: 0 !important;
                 }
-                .main > .block-container {
-                    padding: 0 !important;
+                iframe {
+                    margin-bottom: -10px !important;
                 }
             </style>
         """, unsafe_allow_html=True)
@@ -157,16 +177,16 @@ def show_vessel_position(vessel_name: str):
         # Create columns for position display
         col1, col2 = st.columns(2)
         
-        # Show coordinates
+        # Show coordinates with minimal spacing
         with col1:
             st.metric("Latitude", f"{latitude:.4f}°")
         with col2:
             st.metric("Longitude", f"{longitude:.4f}°")
         
-        # Create and display map
+        # Create and display map with minimal configuration
         vessel_map = create_vessel_map(latitude, longitude)
         
-        # Override folium map settings to minimize spacing
+        # Display map with specific settings
         st_folium(
             vessel_map,
             height=300,
@@ -321,6 +341,16 @@ def show_vessel_synopsis(vessel_name: str):
                 }
                 div.element-container {
                     margin-bottom: 0 !important;
+                }
+
+                /* Control expander spacing */
+                [data-testid="stExpander"] {
+                    margin: 0 !important;
+                    padding: 0 !important;
+                }
+                .streamlit-expanderHeader {
+                    margin: 0 !important;
+                    padding: 0 !important;
                 }
             </style>
         """, unsafe_allow_html=True)
