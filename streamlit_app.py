@@ -562,7 +562,7 @@ def get_kpi_summary(vessel_name: str, hull_condition: str, cii_rating: str,
     Important: The vessel name is "{vessel_name}" - use this exact name in your summary.
 
     Rules for summary:
-    1. ALWAYS start with exactly: "Based on the data of {vessel_name},"
+    1. ALWAYS start with exactly: "Based on the data of {vessel_name.upper()},"
     2. Then discuss hull condition and its implications
     3. Then discuss the vessel score and its components
     4. Finally address crew performance
