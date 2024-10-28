@@ -377,7 +377,7 @@ def show_vessel_synopsis(vessel_name: str):
         st.markdown(f'<div class="kpi-summary">{kpi_summary}</div>', unsafe_allow_html=True)
         
         # Create vessel info table
-        with st.expander("Vessel Information", expanded=True):
+        with st.expander("Vessel Information", expanded=False):
             st.markdown(
                 f"""
                 <table>
