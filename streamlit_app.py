@@ -141,30 +141,50 @@ def show_vessel_position(vessel_name: str):
         with col2:
             st.metric("Longitude", f"{longitude:.4f}°")
         
-        # Create and display map with specific configuration to prevent reruns
+        # Create and display map with specific configuration
         vessel_map = create_vessel_map(latitude, longitude)
-        st_folium(
-            vessel_map, 
-            height=400, 
-            width="100%",
-            returned_objects=[],  # This prevents reruns on map interaction
-            key="vessel_map"  # Unique key to maintain map state
-        )
         
-        # Remove extra spacing
+        # Add custom CSS to remove extra spacing
         st.markdown(
             """
             <style>
-                .element-container .stFolium {
-                    margin-bottom: -2rem;
+                /* Remove extra padding from metric widgets */
+                div.stMetric {
+                    margin-bottom: 0 !important;
+                    padding-bottom: 0 !important;
                 }
-                .element-container {
-                    margin-bottom: 0rem;  /* Adjusted spacing to remove extra space */
+                
+                /* Remove spacing from map container */
+                iframe {
+                    margin-bottom: 0 !important;
+                    padding-bottom: 0 !important;
+                }
+                
+                /* Adjust spacing for the folium map container */
+                div.stFolium {
+                    margin-bottom: 0 !important;
+                    padding-bottom: 0 !important;
+                }
+                
+                /* Remove extra padding from elements */
+                div.element-container {
+                    margin-bottom: 0 !important;
+                    padding-bottom: 0 !important;
                 }
             </style>
             """, 
             unsafe_allow_html=True
         )
+        
+        # Display map with minimal height
+        st_folium(
+            vessel_map, 
+            height=300,  # Reduced height
+            width="100%",
+            returned_objects=[],
+            key="vessel_map"
+        )
+        
     else:
         st.warning("No position data available for this vessel")
        
@@ -702,29 +722,57 @@ def handle_follow_up(query: str):
         show_vessel_synopsis(vessel_name)
 
 def main():
+    # Set page config to wide mode first
+    st.set_page_config(layout="wide", page_title="VesselIQ")
 
+    # Add custom CSS to control width and spacing
     st.markdown(
         """
         <style>
+            /* Set container width to 70% */
             .block-container {
                 padding-top: 1rem;
                 padding-bottom: 0rem;
+                max-width: 70%;
             }
+            
+            /* Remove extra spacing between elements */
             .element-container {
                 margin-bottom: 1rem;
             }
+            
+            /* Adjust markdown spacing */
             .stMarkdown {
                 margin-bottom: 0rem;
             }
+            
+            /* Adjust metric widget spacing */
             .stMetric {
                 margin-bottom: 0.5rem;
+            }
+            
+            /* Add custom scrollbar */
+            ::-webkit-scrollbar {
+                width: 10px;
+                height: 10px;
+            }
+            ::-webkit-scrollbar-track {
+                background: #f1f1f1;
+                border-radius: 5px;
+            }
+            ::-webkit-scrollbar-thumb {
+                background: #888;
+                border-radius: 5px;
+            }
+            ::-webkit-scrollbar-thumb:hover {
+                background: #555;
             }
         </style>
         """, 
         unsafe_allow_html=True
     )
     
-    # JavaScript to change the top bar background color
+    # Change top bar color
     st.markdown(
         """
         <script>
@@ -740,7 +788,7 @@ def main():
     st.title("VesselIQ - Smart Vessel Insights")
     st.markdown("Ask me about vessel performance, speed consumption, or request a complete vessel synopsis!")
     
-    # Initialize session state variables if they don't exist
+    # Initialize session state variables
     if 'messages' not in st.session_state:
         st.session_state.messages = []
     if 'show_synopsis' not in st.session_state:
@@ -755,11 +803,10 @@ def main():
         with st.chat_message(message["role"]):
             st.markdown(message["content"])
     
-    # Show synopsis if requested
+    # Handle synopsis and chart displays
     if st.session_state.show_synopsis and 'vessel_name' in st.session_state:
         show_vessel_synopsis(st.session_state.vessel_name)
     
-    # Show charts if requested
     if st.session_state.show_hull_chart and 'hull_chart' in st.session_state:
         st.pyplot(st.session_state.hull_chart)
     
@@ -779,24 +826,10 @@ def main():
         else:
             response = handle_user_query(prompt)
         
-        if response:  # Only append response if it's not None
+        if response:
             st.session_state.messages.append({"role": "assistant", "content": response})
             with st.chat_message("assistant"):
                 st.markdown(response)
 
-# Add these functions to clear state when needed
-def clear_charts():
-    """Clear chart-related session state"""
-    st.session_state.show_hull_chart = False
-    st.session_state.show_speed_charts = False
-    if 'hull_chart' in st.session_state:
-        del st.session_state.hull_chart
-    if 'speed_charts' in st.session_state:
-        del st.session_state.speed_charts
-
-def clear_synopsis():
-    """Clear synopsis-related session state"""
-    st.session_state.show_synopsis = False
-   
 if __name__ == "__main__":
     main()
