@@ -733,7 +733,7 @@ def main():
             .block-container {
                 padding-top: 1rem;
                 padding-bottom: 0rem;
-                max-width: 70%;
+                max-width: 60%;
             }
             
             /* Remove extra spacing between elements */
