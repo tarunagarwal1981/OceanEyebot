@@ -65,28 +65,42 @@ def plot_hull_roughness(vessel_name, data):
     return fig
 
 def analyze_hull_performance(vessel_name: str):
-    # SQL query to fetch hull performance data for the vessel
-    query = f"""
+    # SQL query to fetch hull performance data for plotting
+    plot_query = f"""
     SELECT vessel_name, report_date, hull_roughness_power_loss
     FROM hull_performance
     WHERE UPPER(vessel_name) = '{vessel_name.upper()}'
     """
     
-    # Fetch data from the database
-    data = fetch_data_from_db(query)
+    # SQL query to fetch the 6-month average from hull_performance_six_months with exact format
+    avg_query = f"""
+    SELECT "hull_rough_speed_loss_pct_ed"
+    FROM hull_performance_six_months
+    WHERE UPPER("vessel_name") = '{vessel_name.upper()}'
+    """
+    
+    # Fetch data from both queries
+    plot_data = fetch_data_from_db(plot_query)
+    avg_data = fetch_data_from_db(avg_query)
     
     # Check if data was fetched successfully
-    if data.empty:
+    if plot_data.empty:
         return f"No hull performance data available for {vessel_name}.", None, None, None
     
     # Call the plot_hull_roughness function
-    fig = plot_hull_roughness(vessel_name, data)
+    fig = plot_hull_roughness(vessel_name, plot_data)
     
     if fig is None:
         return f"No valid hull roughness data available for {vessel_name}.", None, None, None
     
-    # Compute power loss statistics
-    avg_power_loss = data['hull_roughness_power_loss'].mean()
+    # Get the average power loss from hull_performance_six_months
+    if not avg_data.empty and not avg_data['hull_rough_speed_loss_pct_ed'].isna().all():
+        avg_power_loss = avg_data['hull_rough_speed_loss_pct_ed'].iloc[0]
+    else:
+        # Fallback to calculating from plot_data if no value in six_months table
+        avg_power_loss = plot_data['hull_roughness_power_loss'].mean()
+    
+    # Determine hull condition based on average power loss
     hull_condition = "Good" if avg_power_loss < 15 else ("Average" if 15 <= avg_power_loss <= 25 else "Poor")
     
     # Return analysis summary, average power loss, hull condition, and the figure
