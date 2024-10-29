@@ -573,13 +573,13 @@ def get_kpi_summary(vessel_name: str, hull_condition: str, cii_rating: str,
     Formatting rules:
     1. Use the exact vessel name provided above - do not use placeholders
     2. Format hull condition as:
-       - <span class="status-poor">poor</span> for poor condition
-       - <span class="status-average">average</span> for average condition
-       - <span class="status-good">good</span> for good condition
+       - <span class="status-Poor">poor</span> for poor condition
+       - <span class="status-Average">average</span> for average condition
+       - <span class="status-Good">good</span> for good condition
     3. Format numeric values as:
-       - <span class="status-poor">[value]</span>% for values below 60
-       - <span class="status-average">[value]</span>% for values 60-75
-       - <span class="status-good">[value]</span>% for values above 75
+       - <span class="status-Poor">[value]</span>% for values below 60
+       - <span class="status-Average">[value]</span>% for values 60-75
+       - <span class="status-Good">[value]</span>% for values above 75
     4. Always include % symbol after the closing span tag for metrics
 
     Current Data for {vessel_name}:
@@ -587,7 +587,7 @@ def get_kpi_summary(vessel_name: str, hull_condition: str, cii_rating: str,
     - Hull Condition: {hull_condition}
     - CII Rating: {cii_rating}
 
-    Vessel Scores (Target >75%):
+    Vessel Scores (Target >65%):
     - Overall Score: {vessel_score:.1f}%
     - Cost: {cost_score:.1f}%
     - Operation: {operation_score:.1f}%
@@ -595,7 +595,7 @@ def get_kpi_summary(vessel_name: str, hull_condition: str, cii_rating: str,
     - Reliability: {reliability_score:.1f}%
     - Digitalization: {digitalization_score:.1f}%
 
-    Crew Performance (Target >80%):
+    Crew Performance (Target >65%):
     - Overall Crew Skill: {crew_skill_index:.1f}%
     - Capability: {capability_index:.1f}%
     - Competency: {competency_index:.1f}%
@@ -611,7 +611,7 @@ def get_kpi_summary(vessel_name: str, hull_condition: str, cii_rating: str,
     try:
         messages = [
             {"role": "system", "content": SUMMARY_PROMPT},
-            {"role": "user", "content": f"Generate a comprehensive performance summary for vessel {vessel_name} prioritizing hull condition and highlighting critical areas across all KPIs."}
+            {"role": "user", "content": f"Generate a comprehensive performance summary for vessel {vessel_name.upper()} prioritizing hull condition and highlighting critical areas across all KPIs."}
         ]
         
         response = openai.ChatCompletion.create(
