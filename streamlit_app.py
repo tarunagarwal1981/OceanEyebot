@@ -439,23 +439,23 @@ def show_vessel_synopsis(vessel_name: str):
                             </tr>
                             <tr>
                                 <td>Cost</td>
-                                <td><span class='status-{"good" if cost_score >= 75 else "average" if cost_score >= 60 else "poor"}'>{cost_score:.1f}%</span></td>
+                                <td><span class='status-{"Good" if cost_score >= 65 else "average" if cost_score >= 60 else "poor"}'>{cost_score:.1f}%</span></td>
                             </tr>
                             <tr>
                                 <td>Digitalization</td>
-                                <td><span class='status-{"good" if digitalization_score >= 75 else "average" if digitalization_score >= 60 else "poor"}'>{digitalization_score:.1f}%</span></td>
+                                <td><span class='status-{"Good" if digitalization_score >= 65 else "average" if digitalization_score >= 60 else "poor"}'>{digitalization_score:.1f}%</span></td>
                             </tr>
                             <tr>
                                 <td>Environment</td>
-                                <td><span class='status-{"good" if environment_score >= 75 else "average" if environment_score >= 60 else "poor"}'>{environment_score:.1f}%</span></td>
+                                <td><span class='status-{"Good" if environment_score >= 65 else "average" if environment_score >= 60 else "poor"}'>{environment_score:.1f}%</span></td>
                             </tr>
                             <tr>
                                 <td>Operation</td>
-                                <td><span class='status-{"good" if operation_score >= 75 else "average" if operation_score >= 60 else "poor"}'>{operation_score:.1f}%</span></td>
+                                <td><span class='status-{"Good" if operation_score >= 65 else "average" if operation_score >= 60 else "poor"}'>{operation_score:.1f}%</span></td>
                             </tr>
                             <tr>
                                 <td>Reliability</td>
-                                <td><span class='status-{"good" if reliability_score >= 75 else "average" if reliability_score >= 60 else "poor"}'>{reliability_score:.1f}%</span></td>
+                                <td><span class='status-{"Good" if reliability_score >= 65 else "average" if reliability_score >= 60 else "poor"}'>{reliability_score:.1f}%</span></td>
                             </tr>
                         </table>
                         """,
@@ -481,19 +481,19 @@ def show_vessel_synopsis(vessel_name: str):
                             </tr>
                             <tr>
                                 <td>Capability</td>
-                                <td><span class='status-{"good" if capability_index >= 75 else "average" if capability_index >= 60 else "poor"}'>{capability_index:.1f}%</span></td>
+                                <td><span class='status-{"good" if capability_index >= 65 else "average" if capability_index >= 60 else "poor"}'>{capability_index:.1f}%</span></td>
                             </tr>
                             <tr>
                                 <td>Competency</td>
-                                <td><span class='status-{"good" if competency_index >= 75 else "average" if competency_index >= 60 else "poor"}'>{competency_index:.1f}%</span></td>
+                                <td><span class='status-{"good" if competency_index >= 65 else "average" if competency_index >= 60 else "poor"}'>{competency_index:.1f}%</span></td>
                             </tr>
                             <tr>
                                 <td>Collaboration</td>
-                                <td><span class='status-{"good" if collaboration_index >= 75 else "average" if collaboration_index >= 60 else "poor"}'>{collaboration_index:.1f}%</span></td>
+                                <td><span class='status-{"good" if collaboration_index >= 65 else "average" if collaboration_index >= 60 else "poor"}'>{collaboration_index:.1f}%</span></td>
                             </tr>
                             <tr>
                                 <td>Character</td>
-                                <td><span class='status-{"good" if character_index >= 75 else "average" if character_index >= 60 else "poor"}'>{character_index:.1f}%</span></td>
+                                <td><span class='status-{"good" if character_index >= 65 else "average" if character_index >= 60 else "poor"}'>{character_index:.1f}%</span></td>
                             </tr>
                         </table>
                         """,
@@ -573,13 +573,13 @@ def get_kpi_summary(vessel_name: str, hull_condition: str, cii_rating: str,
     Formatting rules:
     1. Use the exact vessel name provided above - do not use placeholders
     2. Format hull condition as:
-       - <span class="status-Poor">poor</span> for poor condition
-       - <span class="status-Average">average</span> for average condition
-       - <span class="status-Good">good</span> for good condition
+       - <span class="status-poor">poor</span> for poor condition
+       - <span class="status-average">average</span> for average condition
+       - <span class="status-good">good</span> for good condition
     3. Format numeric values as:
-       - <span class="status-Poor">[value]</span>% for values below 60
-       - <span class="status-Average">[value]</span>% for values 60-75
-       - <span class="status-Good">[value]</span>% for values above 75
+       - <span class="status-poor">[value]</span>% for values below 60
+       - <span class="status-average">[value]</span>% for values 60-75
+       - <span class="status-good">[value]</span>% for values above 75
     4. Always include % symbol after the closing span tag for metrics
 
     Current Data for {vessel_name}:
@@ -611,7 +611,7 @@ def get_kpi_summary(vessel_name: str, hull_condition: str, cii_rating: str,
     try:
         messages = [
             {"role": "system", "content": SUMMARY_PROMPT},
-            {"role": "user", "content": f"Generate a comprehensive performance summary for vessel {vessel_name.upper()} prioritizing hull condition and highlighting critical areas across all KPIs."}
+            {"role": "user", "content": f"Generate a comprehensive performance summary for vessel {vessel_name} prioritizing hull condition and highlighting critical areas across all KPIs."}
         ]
         
         response = openai.ChatCompletion.create(
