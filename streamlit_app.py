@@ -112,64 +112,45 @@ def show_vessel_position(vessel_name: str):
     latitude, longitude = get_last_position(vessel_name)
     
     if latitude is not None and longitude is not None:
-        # Add CSS to control spacing
+        # Add CSS to control spacing and ensure map visibility
         st.markdown("""
             <style>
                 /* Control metric widget spacing */
                 [data-testid="stMetric"] {
                     margin: 0 !important;
                     padding: 0 !important;
-                    line-height: 1 !important;
-                }
-                [data-testid="stMetricLabel"] {
-                    margin: 0 !important;
-                    padding: 0 !important;
-                }
-                [data-testid="stMetricValue"] {
-                    margin: 0 !important;
-                    padding: 0 !important;
                 }
                 
-                /* Control map container spacing */
-                .element-container {
-                    margin: 0 !important;
-                    padding: 0 !important;
-                }
-                div.stFolium {
-                    margin: 0 !important;
-                    padding: 0 !important;
-                }
-                div.stFolium > iframe {
-                    height: 300px !important;
-                    margin: 0 !important;
-                    padding: 0 !important;
-                    display: block !important;
+                /* Ensure map container is visible and properly sized */
+                .folium-map {
+                    width: 100% !important;
+                    min-height: 300px !important;
+                    z-index: 1 !important;
                 }
                 
-                /* Control column spacing */
-                [data-testid="column"] {
-                    padding: 0 !important;
-                    margin: 0 !important;
-                }
-                
-                /* Control expander spacing */
-                [data-testid="stExpander"] {
-                    margin: 0 !important;
-                    padding: 0 !important;
-                }
-                
-                /* Remove any potential wrapper padding */
-                .stMarkdown {
-                    margin: 0 !important;
-                    padding: 0 !important;
-                }
-                .block-container {
-                    padding-top: 0 !important;
-                    padding-bottom: 0 !important;
-                    margin-bottom: 0 !important;
-                }
+                /* Control iframe visibility and sizing */
                 iframe {
-                    margin-bottom: -10px !important;
+                    width: 100% !important;
+                    min-height: 300px !important;
+                    visibility: visible !important;
+                    z-index: 1 !important;
+                }
+                
+                /* Ensure expandable content is visible */
+                .streamlit-expanderContent {
+                    overflow: visible !important;
+                    z-index: 1 !important;
+                }
+                
+                /* Additional styling for map container */
+                [data-testid="column"] {
+                    z-index: 1 !important;
+                }
+                
+                .stFolium {
+                    width: 100% !important;
+                    min-height: 300px !important;
+                    margin-top: 1rem !important;
                 }
             </style>
         """, unsafe_allow_html=True)
@@ -177,14 +158,17 @@ def show_vessel_position(vessel_name: str):
         # Create columns for position display
         col1, col2 = st.columns(2)
         
-        # Show coordinates with minimal spacing
+        # Show coordinates
         with col1:
             st.metric("Latitude", f"{latitude:.4f}°")
         with col2:
             st.metric("Longitude", f"{longitude:.4f}°")
         
-        # Create and display map with minimal configuration
+        # Create map with modified settings
         vessel_map = create_vessel_map(latitude, longitude)
+        
+        # Force map container to be visible
+        st.markdown('<div style="min-height:300px;">', unsafe_allow_html=True)
         
         # Display map with specific settings
         st_folium(
@@ -192,23 +176,27 @@ def show_vessel_position(vessel_name: str):
             height=300,
             width="100%",
             returned_objects=[],
-            key="vessel_map",
+            key=f"vessel_map_{vessel_name}_{latitude}_{longitude}"  # Unique key
         )
+        
+        st.markdown('</div>', unsafe_allow_html=True)
         
     else:
         st.warning("No position data available for this vessel")
 
 def create_vessel_map(latitude: float, longitude: float) -> folium.Map:
     """
-    Create a Folium map centered on the vessel's position.
+    Create a Folium map centered on the vessel's position with improved visibility settings.
     """
-    # Create base map with minimal margins
+    # Create base map with specific settings for expander compatibility
     m = folium.Map(
         location=[latitude, longitude],
         zoom_start=4,
         tiles='cartodb positron',
         scrollWheelZoom=True,
-        dragging=True
+        dragging=True,
+        width='100%',
+        height='100%'
     )
     
     # Add marker
@@ -218,22 +206,27 @@ def create_vessel_map(latitude: float, longitude: float) -> folium.Map:
         icon=folium.Icon(color='red', icon='info-sign')
     ).add_to(m)
     
-    # Add custom CSS to minimize map margins
+    # Add custom CSS to ensure map visibility
     m.get_root().html.add_child(folium.Element("""
         <style>
             .folium-map {
-                margin: 0 !important;
-                padding: 0 !important;
+                width: 100% !important;
+                height: 300px !important;
+                visibility: visible !important;
+                z-index: 1 !important;
+                position: relative !important;
             }
             .leaflet-container {
-                margin: 0 !important;
-                padding: 0 !important;
+                width: 100% !important;
+                height: 300px !important;
+                visibility: visible !important;
+                z-index: 1 !important;
+                position: relative !important;
             }
         </style>
     """))
     
     return m
-
        
 def show_vessel_synopsis(vessel_name: str):
     """
