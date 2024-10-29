@@ -481,19 +481,19 @@ def show_vessel_synopsis(vessel_name: str):
                             </tr>
                             <tr>
                                 <td>Capability</td>
-                                <td><span class='status-{"good" if capability_index >= 65 else "average" if capability_index >= 60 else "poor"}'>{capability_index:.1f}%</span></td>
+                                <td><span class='status-{"Good" if capability_index >= 65 else "average" if capability_index >= 60 else "poor"}'>{capability_index:.1f}%</span></td>
                             </tr>
                             <tr>
                                 <td>Competency</td>
-                                <td><span class='status-{"good" if competency_index >= 65 else "average" if competency_index >= 60 else "poor"}'>{competency_index:.1f}%</span></td>
+                                <td><span class='status-{"Good" if competency_index >= 65 else "average" if competency_index >= 60 else "poor"}'>{competency_index:.1f}%</span></td>
                             </tr>
                             <tr>
                                 <td>Collaboration</td>
-                                <td><span class='status-{"good" if collaboration_index >= 65 else "average" if collaboration_index >= 60 else "poor"}'>{collaboration_index:.1f}%</span></td>
+                                <td><span class='status-{"Good" if collaboration_index >= 65 else "average" if collaboration_index >= 60 else "poor"}'>{collaboration_index:.1f}%</span></td>
                             </tr>
                             <tr>
                                 <td>Character</td>
-                                <td><span class='status-{"good" if character_index >= 65 else "average" if character_index >= 60 else "poor"}'>{character_index:.1f}%</span></td>
+                                <td><span class='status-{"Good" if character_index >= 65 else "average" if character_index >= 60 else "poor"}'>{character_index:.1f}%</span></td>
                             </tr>
                         </table>
                         """,
